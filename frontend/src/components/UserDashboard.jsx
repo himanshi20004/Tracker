@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import QuizList from './QuizList';
 import TakeQuiz from './Takequiz';
 import coin from '../assets/coin.png'
+import study from '../assets/study8.png';
 
 const UserDashboard = () => {
     const [user, setUser] = useState({ name: '', points: 0, completedTasks: [] });
@@ -148,20 +149,32 @@ const handleQuizClose = () => {
             setCompletedTaskDetails((prevDetails) => [...prevDetails, task]);
         } catch (error) {
             console.error('Error completing task:', error);
+            
         }
     };
 
     return (
-        <div className="flex bg-gradient-to-t from-black to-[#3b0a45] h-[200vh]  font-serif">
-            <div className="w-1/5 p-5 bg-gradient-to-t from-black to-[#5f3168] flex-row text-white">
+        <div className="flex bg-gradient-to-t from-black to-[#3b0a45] h-[130vh]  font-serif"
+        style={{
+            backgroundImage: `url(${study})`,
+            backgroundSize: 'cover', // Ensures the image covers the entire div
+            backgroundRepeat: 'no-repeat', // Prevents the image from repeating
+            backgroundPosition: 'center', // Centers the image
+          }}>
+            <div className="w-1/5 p-5 bg-gradient-to-t from-black to-[#3b0a45] flex-row text-white">
                 <h1 className="text-2xl font-bold mb-2 my-2">User: {user.name}</h1>
                 <p className="mb-4 text-xl flex items-center">
   Points: {user.points} 
   <img src={coin} alt="coin icon" className="ml-2 w-6 h-6 rounded-full" />
 </p>
 
+                
+                <RedirectButton/>
+                <button onClick={openResourcesTab} className="bg-purple-600 text-white p-2 rounded font-serif m-2">
+                View Shared Resources
+                </button>
                 <button
-                    className="bg-red-500 text-white p-2 rounded"
+                    className="bg-red-500 text-white p-2 rounded    w-3/4"
                     onClick={() => {
                         localStorage.removeItem('token');
                         setTimeout(() => {
@@ -171,34 +184,58 @@ const handleQuizClose = () => {
                 >
                     Logout
                 </button>
-                <RedirectButton/>
-                <button onClick={openResourcesTab} className="bg-purple-600 text-white p-2 rounded font-serif m-2">
-                View Shared Resources
-                </button>
                 
                
             </div>
             <div className="w-3/4 p-5 h-screen text-white">
                 <h2 className="text-2xl font-bold mb-4">Task List</h2>
                 <ul className="list-disc text-white pl-5">
-                    {tasks.length > 0 ? (
-                        tasks.map((task) => (
-                            <li key={task._id} className="flex justify-between items-center mb-2">
-                                <span>
-                                    {task.title} - {task.points} points
-                                </span>
-                                <button
-                                    onClick={() => completeTask(task._id)}
-                                    className="bg-green-500 text-white p-1 rounded"
-                                >
-                                    Complete
-                                </button>
-                            </li>
-                        ))
-                    ) : (
-                        <li>No tasks available.</li>
-                    )}
-                </ul>
+    {tasks.length > 0 ? (
+        tasks.map((task) => {
+            const currentTime = new Date();
+            const deadlineTime = new Date(task.deadline);
+            const timeDifference = deadlineTime - currentTime;
+
+            // Calculate days, hours, and minutes remaining
+            const daysLeft = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+            const hoursLeft = Math.floor((timeDifference / (1000 * 60 * 60)) % 24);
+            const minutesLeft = Math.floor((timeDifference / (1000 * 60)) % 60);
+
+            const status =
+                timeDifference <= 0
+                    ? "Deadline Ended"
+                    : `${daysLeft > 0 ? `${daysLeft}d ` : ""}${hoursLeft}h ${minutesLeft}m left`;
+
+            return (
+                <li key={task._id} className="flex justify-between items-center mb-2">
+                    <span>
+                        {task.title} - {task.points} points - {new Date(task.deadline).toLocaleString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true,
+                        })}
+                    </span>
+                    <span className={`ml-4 ${timeDifference <= 0 ? "text-red-500" : "text-green-400"}`}>
+                        {status}
+                    </span>
+                    <button
+                        onClick={() => completeTask(task._id)}
+                        className="bg-green-500 text-white p-1 rounded ml-4"
+                        disabled={timeDifference <= 0} // Disable button if deadline has ended
+                    >
+                        Complete
+                    </button>
+                </li>
+            );
+        })
+    ) : (
+        <li>No tasks available.</li>
+    )}
+</ul>
+
                 
                 <h2 className="text-2xl font-bold mt-8 mb-4">Completed Tasks</h2>
                 <ul className="list-disc pl-5">

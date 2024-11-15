@@ -34,6 +34,12 @@ exports.completeTask = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler("Task not found", 404));
     }
 
+    // Check if the deadline has passed
+    const currentDate = new Date();
+    if (currentDate > new Date(task.deadline)) {
+        return next(new ErrorHandler("Task deadline has ended", 400));
+    }
+
     // Find the user by ID
     const user = await User.findById(userId);
     if (!user) {
@@ -53,16 +59,18 @@ exports.completeTask = catchAsyncErrors(async (req, res, next) => {
     // Populate completed tasks to include task details for the response
     const populatedUser = await User.findById(userId).populate({
         path: 'completedTasks', // Assuming completedTasks is a reference field
-        select: 'title points' // Select fields to return
+        select: 'title points deadline' // Select fields to return
     });
 
     res.status(200).json({
         success: true,
         message: "Task completed successfully",
-        points: populatedUser.points,
-        completedTasks: populatedUser.completedTasks // Now includes task details
+        user: populatedUser,
     });
 });
+
+
+
 exports.getCompletedTaskDetails = catchAsyncErrors(async (req, res, next) => {
     const { taskIds } = req.body; // Array of task IDs passed from the client
 

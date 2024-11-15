@@ -352,7 +352,8 @@ exports.getAllResources = async (req, res) => {
         }
 
         // Find resources where the uploader's role is admin
-        const resources = await Resource.find({ 'uploadedBy.role': 'admin' });
+        const resources = await Resource.find();
+        console.log(resources)
         res.json(resources);
     } catch (error) {
         res.status(500)// Frontend - ChatBox.jsx  
@@ -455,9 +456,9 @@ exports.getAllResources = async (req, res) => {
 
 
 exports.getUserList = async (req, res) => {
-    if (req.user.role !== 'user') {
-        return res.status(403).json({ message: "Access denied" });
-    }
+    //if (req.user.role !== 'user' || req.user.role !=='admin') {
+     //   return res.status(403).json({ message: "Access denied" });
+    //}
     try {
         const currentUserId = req.user.id;
         const users = await User.find(

@@ -15,8 +15,11 @@ const AdminDashboard = () => {
     const navigate = useNavigate();
     const [tasks, setTasks] = useState([]);
     const [editingTaskId, setEditingTaskId] = useState(null);
-    const [quizzes, setQuizzes] = useState([]); // State to store quizzes
     const [showCreateQuizForm, setShowCreateQuizForm] = useState(false);
+    const [quizzes, setQuizzes] = useState([]);
+
+   
+         
 
     useEffect(() => {
         const fetchTasks = async () => {
@@ -191,28 +194,13 @@ const AdminDashboard = () => {
                     )}
                 </ul>
 
-                {/* Display quizzes */}
-                <h2 className="text-xl font-semibold mb-2 pl-5 text-white font-serif mt-5">Quizzes</h2>
-                <ul className="list-decimal pl-5 text-white font-serif">
-                    {Array.isArray(quizzes) && quizzes.length > 0 ? (
-                        quizzes.map(quiz => (
-                            <li key={quiz._id} className="flex justify-between items-center mb-2">
-                                <span>{quiz.title} - {quiz.questions.length} questions</span>
-                                <div>
-                                    <button onClick={() => deleteQuiz(quiz._id)} className="bg-red-500 font-serif text-white p-1 rounded">Delete</button>
-                                </div>
-                            </li>
-                        ))
-                    ) : (
-                        <li>No quizzes available.</li>
-                    )}
-                </ul>
+                
 
                 <RedirectButton />
-                <button onClick={openResourcesTab} className="bg-blue-500 font-serif text-white p-1 rounded mx-1">
+                <button onClick={openResourcesTab} className="bg-purple-600 font-serif text-white p-1 rounded mx-1">
                     View Shared Resources
                 </button>
-                <button onClick={() => navigate('/admin/create-quiz')} className="bg-green-500 font-serif text-white p-1 rounded mx-1">
+                <button onClick={() => navigate('/admin/create-quiz')} className="bg-purple-600 font-serif text-white p-1 rounded mx-1">
                     Create Quiz
                 </button>
             </div>

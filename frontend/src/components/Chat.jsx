@@ -15,7 +15,7 @@ const Chat = ({ socket }) => {
   }, [socket]);
 
   return (
-    <div className="flex h-screen bg-gradient-to-t from-black to-[#3b0a45] font-serif font-bold">
+    <div className="flex min-h-screen bg-gradient-to-t from-black to-[#3b0a45] font-serif font-bold">
       {/* Sidebar Section */}
       <div className="w-80 bg-gradient-to-t from-black to-[#a96bb6] shadow-lg p-4 py-7">
         <Sidebar

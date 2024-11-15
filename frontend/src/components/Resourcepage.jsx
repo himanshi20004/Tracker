@@ -13,6 +13,7 @@ const ResourcesPage = () => {
                     }
                 });
                 setResources(response.data);
+                
             } catch (error) {
                 console.error('Error fetching resources:', error);
             }

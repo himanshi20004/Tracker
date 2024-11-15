@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import study from '../assets/study8.png';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -49,7 +50,13 @@ const LoginPage = () => {
     };
     
     return (
-        <div className="bg-gradient-to-t from-black to-[#3b0a45] flex items-center justify-center h-screen">
+        <div className="bg-gradient-to-t from-black to-[#3b0a45] flex items-center justify-center h-screen"
+        style={{
+            backgroundImage: `url(${study})`,
+            backgroundSize: 'cover', // Ensures the image covers the entire div
+            backgroundRepeat: 'no-repeat', // Prevents the image from repeating
+            backgroundPosition: 'center', // Centers the image
+          }}>
             <div className="bg-[#a3a6a2] rounded-lg shadow-lg p-8 w-96">
                 <h1 className="text-center text-2xl font-semibold text-gray-800 font-serif">Login</h1>
                 {error && <p className="text-red-500 text-center font-serif">{error}</p>}
