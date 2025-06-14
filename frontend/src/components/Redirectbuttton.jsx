@@ -14,6 +14,9 @@ const RedirectButton = () => {
     const handlechat = () => {
         navigate('/Chat'); // Redirect to the timetable route
     };
+     const handleDoubt = () => {
+        navigate('/doubt'); // Redirect to the timetable route
+    };
 
     return (
         <div> {/* Wrapping div */}
@@ -34,6 +37,12 @@ const RedirectButton = () => {
                 className="bg-purple-600 text-white p-2 rounded font-serif m-2"
             >
                 Chat with friends
+            </button>
+            <button 
+                onClick={handleDoubt} 
+                className="bg-purple-600 text-white p-2 rounded font-serif m-2"
+            >
+                Doubt
             </button>
         </div>
     );

@@ -16,7 +16,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Store from './components/Store';
 import ChatUI from './components/Chat';
 import io from 'socket.io-client'
-
+import Doubt from './components/Doubt';
 const socket=io.connect('http://localhost:8000')  //connecting with socket.io 
 
 const App = () => {
@@ -36,6 +36,7 @@ const App = () => {
         <Route path="/admin/create-quiz" element={<CreateQuizForm />} /> 
         <Route path="/store" element={<Store/>} />
         <Route path="/Chat" element={<ChatUI socket={socket}/>}/>
+        <Route path="/doubt" element={<Doubt/>}/>
         
         
       </Routes>

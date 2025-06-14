@@ -19,6 +19,7 @@ const Leaderboard = () => {
         };
 
         fetchLeaderboard();
+        
     }, []);
 
     return (

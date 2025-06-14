@@ -11,6 +11,7 @@ import QuizList from './QuizList';
 import TakeQuiz from './Takequiz';
 import coin from '../assets/coin.png'
 import study from '../assets/study8.png';
+import Doubt from './Doubt'
 
 const UserDashboard = () => {
     const [user, setUser] = useState({ name: '', points: 0, completedTasks: [] });
@@ -170,6 +171,7 @@ const handleQuizClose = () => {
 
                 
                 <RedirectButton/>
+                
                 <button onClick={openResourcesTab} className="bg-purple-600 text-white p-2 rounded font-serif m-2">
                 View Shared Resources
                 </button>
