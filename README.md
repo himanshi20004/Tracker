@@ -1,7 +1,7 @@
 # 🎓 LearnMate: A Gamified Learning Platform
 
 **LearnMate** is a full-stack, gamified learning platform designed to make education engaging and collaborative. With features like real-time chat, interactive quizzes, a to-do task system, and an AI-powered doubt assistant, LearnMate aims to revolutionize how students learn and connect online.
-![Preview](./assets/preview.png)
+![Preview](./frontend/assets/preview.png)
 
 
 ## 🚀 Features
