@@ -30,7 +30,7 @@ const LoginPage = () => {
                 localStorage.setItem('role', role);
                 localStorage.setItem('user', JSON.stringify(userData));
                 
-                localStorage.setItem("userId", user.id); // Assuming user._id is the user's ID
+                localStorage.setItem("userId", user.id); 
                 
                 // Navigate to the dashboard based on the user's role
                 if (role === 'admin') {
