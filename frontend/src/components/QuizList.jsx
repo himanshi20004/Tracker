@@ -17,7 +17,7 @@ const QuizList = ({ quizzes, onTakeQuiz }) => {
               <p className="mb-4">Total Points: {quiz.totalPoints}</p>
               <button
                 onClick={() => onTakeQuiz(quiz)}
-                className="bg-purple-600 text-white p-2 rounded font-serif m-2"
+                className="bg-gradient-to-r from-purple-600 to-blue-500 text-white p-2 rounded font-serif m-2 hover:opacity-90 transition"
               >
                 Take Quiz
               </button>

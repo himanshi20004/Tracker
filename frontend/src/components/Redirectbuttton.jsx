@@ -1,45 +1,31 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 
-const RedirectButton = () => {
-    const navigate = useNavigate();
-
-    const handleRedirect = () => {
-        navigate('/leaderboard'); // Redirect to the leaderboard route
-    };
-
-    const handleTime = () => {
-        navigate('/Timetable'); // Redirect to the timetable route
-    };
-    const handlechat = () => {
-        navigate('/Chat'); // Redirect to the timetable route
-    };
-     const handleDoubt = () => {
-        navigate('/doubt'); // Redirect to the timetable route
-    };
-
+const RedirectButton = ({ setActiveTab }) => {
     return (
-        <div> {/* Wrapping div */}
+        <div>
             <button 
-                onClick={handleRedirect} 
+                onClick={() => setActiveTab('quizzes')}
                 className="bg-purple-600 text-white p-2 rounded font-serif m-2"
             >
                 Go to Leaderboard
             </button>
+
             <button 
-                onClick={handleTime} 
+                onClick={() => setActiveTab('timetable')}
                 className="bg-purple-600 text-white p-2 rounded font-serif m-2"
             >
                 Timetable
             </button>
+
             <button 
-                onClick={handlechat} 
+                onClick={() => setActiveTab('chat')}
                 className="bg-purple-600 text-white p-2 rounded font-serif m-2"
             >
                 Chat with friends
             </button>
+
             <button 
-                onClick={handleDoubt} 
+                onClick={() => setActiveTab('doubt')}
                 className="bg-purple-600 text-white p-2 rounded font-serif m-2"
             >
                 Doubt

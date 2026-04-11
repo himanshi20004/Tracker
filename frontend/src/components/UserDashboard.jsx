@@ -1,264 +1,344 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import RedirectButton from './Redirectbuttton';
 import Timetable from './Timetable';
 import ResourcesList from './ResourceList';
 import ChatUI from './Chat';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom'; 
 import QuizList from './QuizList';
 import TakeQuiz from './Takequiz';
-import coin from '../assets/coin.png'
-import study from '../assets/study8.png';
-import Doubt from './Doubt'
+import Doubt from './Doubt';
+import coin from '../assets/coin.png';
+
+const NAV_ITEMS = [
+  { id: 'tasks',     label: 'My Tasks',   icon: '✅' },
+  { id: 'quizzes',   label: 'Quizzes',    icon: '🧠' },
+  { id: 'resources', label: 'Resources',  icon: '📚' },
+  { id: 'timetable', label: 'Timetable',  icon: '📅' },
+  { id: 'chat',      label: 'Chat',       icon: '💬' },
+  { id: 'doubt',     label: 'Doubt',      icon: '🙋' },
+];
 
 const UserDashboard = () => {
-    const [user, setUser] = useState({ name: '', points: 0, completedTasks: [] });
-    const [tasks, setTasks] = useState([]);
-    const [completedTaskDetails, setCompletedTaskDetails] = useState([]);
-    const [quizzes, setQuizzes] = useState([]);
-  const [selectedQuiz, setSelectedQuiz] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  
-    const navigate = useNavigate(); // Initialize navigate function
+  const [user, setUser]                         = useState({ name: '', points: 0, completedTasks: [] });
+  const [tasks, setTasks]                       = useState([]);
+  const [completedTaskDetails, setCompletedTaskDetails] = useState([]);
+  const [quizzes, setQuizzes]                   = useState([]);
+  const [selectedQuiz, setSelectedQuiz]         = useState(null);
+  const [isLoading, setIsLoading]               = useState(true);
+  const [activeTab, setActiveTab]               = useState('tasks');
+  const navigate = useNavigate();
 
+  /* ── data fetching (unchanged logic) ── */
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/v1/me', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        const userData = res.data.user;
+        setUser({ name: userData?.username || 'No Name', points: userData?.points || 0, completedTasks: userData?.completedTasks || [] });
 
+        if (userData.completedTasks.length > 0) {
+          const ctRes = await axios.post(
+            'http://localhost:5000/api/v1/details',
+            { taskIds: userData.completedTasks },
+            { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+          );
+          setCompletedTaskDetails(ctRes.data.tasks);
+        }
 
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const response = await axios.get('http://localhost:5000/api/v1/me', {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-                });
-                const { user: userData } = response.data;
-
-                setUser({
-                    name: userData?.username || 'No Name',
-                    points: userData?.points || 0,
-                    completedTasks: userData?.completedTasks || [],
-                });
-
-                // Fetch completed task details
-                if (userData.completedTasks.length > 0) {
-                    const completedTasksResponse = await axios.post(
-                        'http://localhost:5000/api/v1/details',
-                        { taskIds: userData.completedTasks },
-                        { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
-                    );
-                    setCompletedTaskDetails(completedTasksResponse.data.tasks);
-                }
-
-                // Fetch and filter tasks based on completedTasks
-                const tasksResponse = await axios.get('http://localhost:5000/api/v1/task', {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-                });
-                const allTasks = tasksResponse.data.tasks;
-                const filteredTasks = allTasks.filter(
-                    (task) => !userData.completedTasks.includes(task._id)
-                );
-                setTasks(filteredTasks);
-            } catch (error) {
-                console.error('Error fetching user or task data:', error);
-            }
-        };
-
-        fetchUserData();
-    }, []);
-    const openResourcesTab = () => {
-        window.open('/resources', '_blank');
+        const taskRes = await axios.get('http://localhost:5000/api/v1/task', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        setTasks(taskRes.data.tasks.filter(t => !userData.completedTasks.includes(t._id)));
+      } catch (err) {
+        console.error('Error fetching data:', err);
+      }
     };
-    useEffect(() => {
-        //console.log("User state after fetch:", user);
-    }, [user]);
-    
+    fetchUserData();
+  }, []);
 
-
-    // Fetch all quizzes
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (!token) {
-          toast.error('You must be logged in to view quizzes.');
-          return;
-        }
-
-        const response = await axios.get('http://localhost:5000/api/v1/getquizzes', {
+        if (!token) { toast.error('You must be logged in to view quizzes.'); return; }
+        const res = await axios.get('http://localhost:5000/api/v1/getquizzes', {
           headers: { Authorization: `Bearer ${token}` },
         });
-
-        if (response.data && response.data.quizzes) {
-            console.log(response.data)
-          setQuizzes(response.data.quizzes);
-        } else {
-          toast.error('No quizzes available.');
-        }
-      } catch (error) {
+        if (res.data?.quizzes) setQuizzes(res.data.quizzes);
+        else toast.error('No quizzes available.');
+      } catch (err) {
         toast.error('Failed to fetch quizzes.');
-        console.error('Error fetching quizzes:', error);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchQuizzes();
   }, []);
-     
 
-
-  // Handle quiz submission to reset the selectedQuiz state
-  const handleQuizSubmit = () => {
-    setSelectedQuiz(null);
+  const completeTask = async (taskId) => {
+    const task = tasks.find(t => t._id === taskId);
+    if (!task) return;
+    try {
+      const updatedPoints        = user.points + task.points;
+      const updatedCompletedTasks = [...user.completedTasks, taskId];
+      await axios.patch(
+        'http://localhost:5000/api/v1/user/update',
+        { completedTasks: updatedCompletedTasks, points: updatedPoints },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      setUser(prev => ({ ...prev, points: updatedPoints, completedTasks: updatedCompletedTasks }));
+      setTasks(prev => prev.filter(t => t._id !== taskId));
+      setCompletedTaskDetails(prev => [...prev, task]);
+    } catch (err) {
+      console.error('Error completing task:', err);
+    }
   };
 
-// Handle "Take Quiz" button click
-const handleTakeQuiz = (quiz) => {
-    setSelectedQuiz(quiz);
-  };
-const handleQuizClose = () => {
-    console.log('Quiz is closed');
-    setShowQuiz(false);  // This could hide the quiz modal or perform another action
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('user');
+    navigate('/login');
   };
 
+  /* ── deadline helpers ── */
+  const getDeadlineStatus = (deadline) => {
+    const diff = new Date(deadline) - new Date();
+    if (diff <= 0) return { label: 'Deadline passed', expired: true };
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff / 3600000) % 24);
+    const m = Math.floor((diff / 60000) % 60);
+    return { label: `${d > 0 ? `${d}d ` : ''}${h}h ${m}m left`, expired: false };
+  };
 
-    const completeTask = async (taskId) => {
-        const task = tasks.find((t) => t._id === taskId);
-        if (!task) return;
+  /* ── avatar initials ── */
+  const initials = user.name ? user.name.slice(0, 2).toUpperCase() : 'US';
 
-        try {
-            const updatedPoints = user.points + task.points;
-            const updatedCompletedTasks = [...user.completedTasks, taskId];
+  return (
+    <div className="min-h-screen flex bg-gray-50 font-sans">
 
-            await axios.patch(
-                'http://localhost:5000/api/v1/user/update',
-                { completedTasks: updatedCompletedTasks, points: updatedPoints },
-                { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
-            );
+      {/* ═══ SIDEBAR ═══ */}
+      <aside className="w-64 shrink-0 flex flex-col bg-white border-r border-gray-100 shadow-sm min-h-screen">
 
-            // Update local user state after completion
-            setUser((prevUser) => ({
-                ...prevUser,
-                points: updatedPoints,
-                completedTasks: updatedCompletedTasks,
-            }));
-
-            // Remove completed task from tasks list
-            setTasks((prevTasks) => prevTasks.filter((task) => task._id !== taskId));
-
-            // Update completed task details
-            setCompletedTaskDetails((prevDetails) => [...prevDetails, task]);
-        } catch (error) {
-            console.error('Error completing task:', error);
-            
-        }
-    };
-
-    return (
-        <div className="flex bg-gradient-to-t from-black to-[#3b0a45] h-[130vh]  font-serif"
-        style={{
-            backgroundImage: `url(${study})`,
-            backgroundSize: 'cover', // Ensures the image covers the entire div
-            backgroundRepeat: 'no-repeat', // Prevents the image from repeating
-            backgroundPosition: 'center', // Centers the image
-          }}>
-            <div className="w-1/5 p-5 bg-gradient-to-t from-black to-[#3b0a45] flex-row text-white">
-                <h1 className="text-2xl font-bold mb-2 my-2">User: {user.name}</h1>
-                <p className="mb-4 text-xl flex items-center">
-  Points: {user.points} 
-  <img src={coin} alt="coin icon" className="ml-2 w-6 h-6 rounded-full" />
-</p>
-
-                
-                <RedirectButton/>
-                
-                <button onClick={openResourcesTab} className="bg-purple-600 text-white p-2 rounded font-serif m-2">
-                View Shared Resources
-                </button>
-                <button
-                    className="bg-red-500 text-white p-2 rounded    w-3/4"
-                    onClick={() => {
-                        localStorage.removeItem('token');
-                        setTimeout(() => {
-                            Navigate('/login');
-                        }, 1500);
-                    }}
-                >
-                    Logout
-                </button>
-                
-               
-            </div>
-            <div className="w-3/4 p-5 h-screen text-white">
-                <h2 className="text-2xl font-bold mb-4">Task List</h2>
-                <ul className="list-disc text-white pl-5">
-    {tasks.length > 0 ? (
-        tasks.map((task) => {
-            const currentTime = new Date();
-            const deadlineTime = new Date(task.deadline);
-            const timeDifference = deadlineTime - currentTime;
-
-            // Calculate days, hours, and minutes remaining
-            const daysLeft = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-            const hoursLeft = Math.floor((timeDifference / (1000 * 60 * 60)) % 24);
-            const minutesLeft = Math.floor((timeDifference / (1000 * 60)) % 60);
-
-            const status =
-                timeDifference <= 0
-                    ? "Deadline Ended"
-                    : `${daysLeft > 0 ? `${daysLeft}d ` : ""}${hoursLeft}h ${minutesLeft}m left`;
-
-            return (
-                <li key={task._id} className="flex justify-between items-center mb-2">
-                    <span>
-                        {task.title} - {task.points} points - {new Date(task.deadline).toLocaleString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: true,
-                        })}
-                    </span>
-                    <span className={`ml-4 ${timeDifference <= 0 ? "text-red-500" : "text-green-400"}`}>
-                        {status}
-                    </span>
-                    <button
-                        onClick={() => completeTask(task._id)}
-                        className="bg-green-500 text-white p-1 rounded ml-4"
-                        disabled={timeDifference <= 0} // Disable button if deadline has ended
-                    >
-                        Complete
-                    </button>
-                </li>
-            );
-        })
-    ) : (
-        <li>No tasks available.</li>
-    )}
-</ul>
-
-                
-                <h2 className="text-2xl font-bold mt-8 mb-4">Completed Tasks</h2>
-                <ul className="list-disc pl-5">
-                    {completedTaskDetails.length > 0 ? (
-                        completedTaskDetails.map((task) => (
-                            <li key={task._id} className="mb-2">{task.title}</li>
-                        ))
-                    ) : (
-                        <li>No completed tasks.</li>
-                    )}
-                </ul>
-                <h2 className="text-2xl font-bold mt-8 mb-4">Available Quizzes</h2>
-        <QuizList  className="text-black flex flex-col"quizzes={quizzes} onTakeQuiz={handleTakeQuiz} />
-
-        {selectedQuiz && (
-          <TakeQuiz className="bg-purple-600 text-white p-2 rounded font-serif m-2" quiz={selectedQuiz} onQuizSubmit={handleQuizSubmit}  />
-        )}
-            </div>
-            
+        {/* Logo */}
+        <div className="flex items-center gap-2.5 px-6 py-5 border-b border-gray-100">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center shadow">
+            <div className="w-2 h-2 bg-white rounded-full" />
+          </div>
+          <span className="text-lg font-bold text-gray-900">StudyWave</span>
         </div>
-    );
+
+        {/* User card */}
+        <div className="mx-4 mt-5 mb-4 p-4 rounded-2xl bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-100">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+              {initials}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900 leading-tight">{user.name}</p>
+              <p className="text-xs text-gray-400">Student</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-purple-100">
+            <img src={coin} alt="coins" className="w-5 h-5 rounded-full" />
+            <span className="text-sm font-bold text-purple-700">{user.points}</span>
+            <span className="text-xs text-gray-400">points</span>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 space-y-0.5">
+          {NAV_ITEMS.map(item => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14px] font-medium transition-all ${
+                activeTab === item.id
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md shadow-purple-100'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <span className="text-base">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Bottom actions */}
+        <div className="px-4 pb-6 pt-4 border-t border-gray-100 space-y-2 mt-2">
+          <button
+            onClick={() => window.open('/resources', '_blank')}
+            className="w-full px-4 py-2.5 text-[13px] font-medium text-purple-700 bg-purple-50 border border-purple-100 rounded-xl hover:bg-purple-100 transition"
+          >
+            📂 Shared Resources
+          </button>
+          
+          <button
+            onClick={handleLogout}
+            className="w-full px-4 py-2.5 text-[13px] font-medium text-red-600 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition"
+          >
+            🚪 Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* ═══ MAIN CONTENT ═══ */}
+      <main className="flex-1 overflow-y-auto">
+
+        {/* Top bar */}
+        <header className="sticky top-0 z-10 flex items-center justify-between px-8 py-4 bg-white border-b border-gray-100 shadow-sm">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">
+              {NAV_ITEMS.find(n => n.id === activeTab)?.icon}{' '}
+              {NAV_ITEMS.find(n => n.id === activeTab)?.label}
+            </h1>
+            <p className="text-xs text-gray-400 mt-0.5">Welcome back, {user.name} 👋</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 rounded-xl border border-purple-100">
+              <img src={coin} alt="coins" className="w-4 h-4 rounded-full" />
+              <span className="text-sm font-bold text-purple-700">{user.points} pts</span>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+              {initials}
+            </div>
+          </div>
+        </header>
+
+        <div className="px-8 py-7">
+
+          {/* ── TASKS TAB ── */}
+          {activeTab === 'tasks' && (
+            <div className="space-y-6">
+
+              {/* Summary cards */}
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { label: 'Pending Tasks',    val: tasks.length,                  color: 'purple' },
+                  { label: 'Completed Tasks',  val: completedTaskDetails.length,   color: 'blue'   },
+                  { label: 'Total Points',     val: user.points,                   color: 'green'  },
+                ].map(c => (
+                  <div key={c.label} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                    <p className="text-xs text-gray-400 mb-1">{c.label}</p>
+                    <p className={`text-3xl font-extrabold text-${c.color}-600`}>{c.val}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pending tasks */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-50">
+                  <h2 className="text-base font-semibold text-gray-900">Pending Tasks</h2>
+                </div>
+                {tasks.length > 0 ? (
+                  <ul className="divide-y divide-gray-50">
+                    {tasks.map(task => {
+                      const { label, expired } = getDeadlineStatus(task.deadline);
+                      return (
+                        <li key={task._id} className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{task.title}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              Due: {new Date(task.deadline).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0 ml-4">
+                            <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100">
+                              <img src={coin} alt="" className="w-3.5 h-3.5 rounded-full" /> {task.points} pts
+                            </span>
+                            <span className={`text-xs font-medium px-2.5 py-1 rounded-lg border ${expired ? 'text-red-600 bg-red-50 border-red-100' : 'text-green-600 bg-green-50 border-green-100'}`}>
+                              {label}
+                            </span>
+                            <button
+                              onClick={() => completeTask(task._id)}
+                              disabled={expired}
+                              className="px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 rounded-lg hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              Complete
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="px-6 py-10 text-center">
+                    <p className="text-4xl mb-3">🎉</p>
+                    <p className="text-sm font-medium text-gray-500">All tasks done! Great work.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Completed tasks */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-50">
+                  <h2 className="text-base font-semibold text-gray-900">Completed Tasks</h2>
+                </div>
+                {completedTaskDetails.length > 0 ? (
+                  <ul className="divide-y divide-gray-50">
+                    {completedTaskDetails.map(task => (
+                      <li key={task._id} className="flex items-center gap-3 px-6 py-3.5">
+                        <span className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xs shrink-0">✓</span>
+                        <span className="text-sm text-gray-700">{task.title}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="px-6 py-6 text-sm text-gray-400">No completed tasks yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── QUIZZES TAB ── */}
+          {activeTab === 'quizzes' && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              {isLoading ? (
+                <p className="text-sm text-gray-400">Loading quizzes...</p>
+              ) : selectedQuiz ? (
+                <TakeQuiz quiz={selectedQuiz} onQuizSubmit={() => setSelectedQuiz(null)} />
+              ) : (
+                <QuizList quizzes={quizzes} onTakeQuiz={setSelectedQuiz} />
+              )}
+            </div>
+          )}
+
+          {/* ── RESOURCES TAB ── */}
+          {activeTab === 'resources' && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <ResourcesList />
+            </div>
+          )}
+
+          {/* ── TIMETABLE TAB ── */}
+          {activeTab === 'timetable' && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <Timetable />
+            </div>
+          )}
+
+          {/* ── CHAT TAB ── */}
+          {activeTab === 'chat' && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <ChatUI />
+            </div>
+          )}
+
+          {/* ── DOUBT TAB ── */}
+          {activeTab === 'doubt' && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <Doubt />
+            </div>
+          )}
+
+        </div>
+      </main>
+    </div>
+  );
 };
 
 export default UserDashboard;

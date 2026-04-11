@@ -1,19 +1,17 @@
-
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// Define the question schema
 const questionSchema = new Schema({
   questionText: {
     type: String,
     required: true,
   },
   options: {
-    type: [String], // Array of options as strings
+    type: [String],
     required: true,
   },
   correctAnswer: {
-    type: Number, // Index of the correct answer in the options array
+    type: Number,
     required: true,
   },
   points: {
@@ -22,18 +20,17 @@ const questionSchema = new Schema({
   },
 });
 
-// Define the quiz schema
 const quizSchema = new Schema({
   title: {
     type: String,
     required: true,
   },
   questions: {
-    type: [questionSchema], // Array of question objects
+    type: [questionSchema],
     required: true,
   },
   timer: {
-    type: Number, // Total time in seconds
+    type: Number,
     required: true,
   },
   totalPoints: {
@@ -42,14 +39,23 @@ const quizSchema = new Schema({
   },
   createdBy: {
     type: Schema.Types.ObjectId,
-    ref: 'User', 
+    ref: 'User',
     required: true,
   },
   createdAt: {
     type: Date,
     default: Date.now,
   },
+  deadline: {
+    type: Date,
+    required: true,
+  },
+  attemptedUsers: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+  ],
 });
 
-// Export the model
 module.exports = mongoose.model('Quiz', quizSchema);

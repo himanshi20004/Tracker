@@ -485,33 +485,52 @@ exports.getUser = async (req, res) => {
   };
   
   //delete timetable events 
-  exports.deleteEvent = async (req, res) => {
-    const { userId, eventId } = req.params;
-    try {
-        const result = await Timetable.findOneAndUpdate(
-            { userId },
-            { $pull: { events: { _id: eventId } } },
-            { new: true }
-        );
-        if (!result) return res.status(404).json({ message: "Event not found" });
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ message: "Error deleting event" });
+  // Delete timetable event
+exports.deleteEvent = catchAsyncErrors(async (req, res, next) => {
+    const { userId, eventId } = req.params; // indexToDelete
+    const { date } = req.query;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.timetable && user.timetable.has(date)) {
+        const events = user.timetable.get(date);
+        
+        // Remove the item at the specific index
+        events.splice(eventId, 1); 
+        
+        // Re-set the map key with the shorter array
+        user.timetable.set(date, events);
+
+        // IMPORTANT: Tell Mongoose the Map has been modified
+        user.markModified('timetable'); 
+        
+        await user.save();
+        return res.status(200).json({ success: true, timetable: user.timetable });
     }
-};
-//edit timetable events
-exports.editEvent = async (req, res) => {
+
+    res.status(400).json({ message: "Date not found" });
+});
+// Edit timetable event
+exports.editEvent = catchAsyncErrors(async (req, res, next) => {
     const { userId } = req.params;
-    const { id, detail } = req.body;
-    try {
-        const event = await Timetable.findOneAndUpdate(
-            { userId, "events._id": id },
-            { $set: { "events.$.detail": detail } },
-            { new: true }
-        );
-        if (!event) return res.status(404).json({ message: "Event not found" });
-        res.json(event);
-    } catch (error) {
-        res.status(500).json({ message: "Error updating event" });
+    const { date, index, detail } = req.body; // Pass date and array index
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.timetable && user.timetable.has(date)) {
+        const events = user.timetable.get(date);
+        if (events[index] !== undefined) {
+            events[index] = detail; // Update the specific index
+            user.timetable.set(date, events);
+            
+            // Critical for Maps in Mongoose:
+            user.markModified('timetable'); 
+            
+            await user.save();
+            return res.status(200).json(user.timetable);
+        }
     }
-};
+    res.status(400).json({ message: "Update failed" });
+});
