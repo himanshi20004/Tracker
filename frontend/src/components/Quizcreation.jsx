@@ -1,51 +1,57 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify'; 
-import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const CreateQuizForm = () => {
   const [title, setTitle] = useState('');
   const [timer, setTimer] = useState('');
+  const [deadline, setDeadline] = useState('');
   const [questions, setQuestions] = useState([
     { questionText: '', options: ['', '', '', ''], correctAnswer: 0, points: 0 }
   ]);
 
-  // Handler to add new question
+  const navigate = useNavigate(); // Initialize the navigate function
+
   const addQuestion = () => {
     setQuestions([...questions, { questionText: '', options: ['', '', '', ''], correctAnswer: 0, points: 0 }]);
   };
 
-  // Handler to update question data
   const updateQuestion = (index, field, value) => {
     const updatedQuestions = [...questions];
     updatedQuestions[index][field] = value;
     setQuestions(updatedQuestions);
   };
 
-  // Handle form submission
+  const updateOption = (qIndex, optIndex, value) => {
+    const updatedQuestions = [...questions];
+    updatedQuestions[qIndex].options[optIndex] = value;
+    setQuestions(updatedQuestions);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation for required fields
-    if (!title || !timer || questions.some(q => !q.questionText || q.options.some(opt => !opt))) {
-      toast.error('Please fill in all fields.');
+    const isInvalid = questions.some(q => 
+      !q.questionText || q.options.some(opt => opt.trim() === "")
+    );
+
+    if (!title || !timer || !deadline || isInvalid) {
+      toast.error('Please fill in all fields, including all options and the deadline.');
       return;
     }
 
-    // Get the token from localStorage
     const token = localStorage.getItem('token');
 
-    // If there is no token, show an error and return
-    if (!token) {
-      toast.error('No authentication token found.');
-      return;
-    }
-
     try {
-      // Send the POST request to create the quiz
-      const response = await axios.post(
+      await axios.post(
         'http://localhost:5000/api/v1/postquizzes',
-        { title, questions, timer: parseInt(timer, 10) },
+        { 
+          title, 
+          questions, 
+          timer: parseInt(timer, 10),
+          deadline 
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -54,20 +60,25 @@ const CreateQuizForm = () => {
         }
       );
 
-      // If the quiz was created successfully
       toast.success('Quiz created successfully!');
+
+      // AUTOMATIC NAVIGATION:
+      // We wait 1.5 seconds so the user sees the success toast before leaving
+      setTimeout(() => {
+        navigate('/adminDashboard'); // Adjust this path to match your actual dashboard route
+      }, 1500);
       
     } catch (error) {
-      // If the request failed (e.g., user is not authorized)
       console.error('Error creating quiz:', error);
-      toast.error('Failed to create quiz. Please check your credentials or permissions.');
+      toast.error(error.response?.data?.message || 'Failed to create quiz.');
     }
   };
 
   return (
-    <div className="quiz-form p-6 bg-white rounded-lg shadow-lg max-w-lg mx-auto mt-10">
+    <div className="quiz-form p-6 bg-white rounded-lg shadow-lg max-w-lg mx-auto mt-10 text-black">
       <h2 className="text-2xl font-semibold text-center mb-6">Create Quiz</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        
         <div className="flex flex-col">
           <label className="text-sm font-medium text-gray-600">Title</label>
           <input 
@@ -90,6 +101,17 @@ const CreateQuizForm = () => {
           />
         </div>
 
+        <div className="flex flex-col">
+          <label className="text-sm font-medium text-gray-600">Deadline (Date & Time)</label>
+          <input 
+            type="datetime-local" 
+            value={deadline} 
+            onChange={(e) => setDeadline(e.target.value)} 
+            required 
+            className="mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
         {questions.map((question, index) => (
           <div key={index} className="p-4 bg-gray-50 rounded-md border">
             <h3 className="text-lg font-medium mb-3">Question {index + 1}</h3>
@@ -99,7 +121,7 @@ const CreateQuizForm = () => {
               value={question.questionText}
               onChange={(e) => updateQuestion(index, 'questionText', e.target.value)}
               required
-              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 mb-3"
+              className="w-full p-2 border rounded-md mb-3"
             />
             
             <div className="space-y-2">
@@ -109,39 +131,36 @@ const CreateQuizForm = () => {
                   type="text"
                   placeholder={`Option ${optIndex + 1}`}
                   value={option}
-                  onChange={(e) => {
-                    const updatedOptions = [...question.options];
-                    updatedOptions[optIndex] = e.target.value;
-                    updateQuestion(index, 'options', updatedOptions);
-                  }}
+                  onChange={(e) => updateOption(index, optIndex, e.target.value)}
                   required
-                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border rounded-md bg-white"
                 />
               ))}
             </div>
 
-            <div className="flex flex-col mt-3">
-              <label className="text-sm font-medium text-gray-600">Correct Answer (index)</label>
-              <input
-                type="number"
-                min="0"
-                max="3"
-                value={question.correctAnswer}
-                onChange={(e) => updateQuestion(index, 'correctAnswer', parseInt(e.target.value))}
-                required
-                className="mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div className="flex flex-col mt-3">
-              <label className="text-sm font-medium text-gray-600">Points</label>
-              <input
-                type="number"
-                value={question.points}
-                onChange={(e) => updateQuestion(index, 'points', parseInt(e.target.value))}
-                required
-                className="mt-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
-              />
+            <div className="grid grid-cols-2 gap-4 mt-3">
+              <div className="flex flex-col">
+                <label className="text-xs font-medium text-gray-600">Correct Index (0-3)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="3"
+                  value={question.correctAnswer}
+                  onChange={(e) => updateQuestion(index, 'correctAnswer', parseInt(e.target.value))}
+                  required
+                  className="mt-1 p-2 border rounded-md"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label className="text-xs font-medium text-gray-600">Points</label>
+                <input
+                  type="number"
+                  value={question.points}
+                  onChange={(e) => updateQuestion(index, 'points', parseInt(e.target.value))}
+                  required
+                  className="mt-1 p-2 border rounded-md"
+                />
+              </div>
             </div>
           </div>
         ))}

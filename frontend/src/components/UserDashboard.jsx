@@ -21,13 +21,14 @@ const NAV_ITEMS = [
 ];
 
 const UserDashboard = () => {
-  const [user, setUser]                         = useState({ name: '', points: 0, completedTasks: [] });
-  const [tasks, setTasks]                       = useState([]);
+  // REVISED: Added 'id' to the state object to track current user
+  const [user, setUser] = useState({ id: '', name: '', points: 0, completedTasks: [] });
+  const [tasks, setTasks] = useState([]);
   const [completedTaskDetails, setCompletedTaskDetails] = useState([]);
-  const [quizzes, setQuizzes]                   = useState([]);
-  const [selectedQuiz, setSelectedQuiz]         = useState(null);
-  const [isLoading, setIsLoading]               = useState(true);
-  const [activeTab, setActiveTab]               = useState('tasks');
+  const [quizzes, setQuizzes] = useState([]);
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('tasks');
   const navigate = useNavigate();
 
   /* ── data fetching (unchanged logic) ── */
@@ -38,7 +39,13 @@ const UserDashboard = () => {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         const userData = res.data.user;
-        setUser({ name: userData?.username || 'No Name', points: userData?.points || 0, completedTasks: userData?.completedTasks || [] });
+        // REVISED: Storing the user's _id so QuizList can use it
+        setUser({ 
+          id: userData?._id, 
+          name: userData?.username || 'No Name', 
+          points: userData?.points || 0, 
+          completedTasks: userData?.completedTasks || [] 
+        });
 
         if (userData.completedTasks.length > 0) {
           const ctRes = await axios.post(
@@ -60,22 +67,24 @@ const UserDashboard = () => {
     fetchUserData();
   }, []);
 
+  // REVISED: Extracted this function so we can call it again after a quiz is submitted
+  const fetchQuizzes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { toast.error('You must be logged in to view quizzes.'); return; }
+      const res = await axios.get('http://localhost:5000/api/v1/getquizzes', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.data?.quizzes) setQuizzes(res.data.quizzes);
+      else toast.error('No quizzes available.');
+    } catch (err) {
+      toast.error('Failed to fetch quizzes.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchQuizzes = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) { toast.error('You must be logged in to view quizzes.'); return; }
-        const res = await axios.get('http://localhost:5000/api/v1/getquizzes', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.data?.quizzes) setQuizzes(res.data.quizzes);
-        else toast.error('No quizzes available.');
-      } catch (err) {
-        toast.error('Failed to fetch quizzes.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchQuizzes();
   }, []);
 
@@ -83,7 +92,7 @@ const UserDashboard = () => {
     const task = tasks.find(t => t._id === taskId);
     if (!task) return;
     try {
-      const updatedPoints        = user.points + task.points;
+      const updatedPoints         = user.points + task.points;
       const updatedCompletedTasks = [...user.completedTasks, taskId];
       await axios.patch(
         'http://localhost:5000/api/v1/user/update',
@@ -294,15 +303,27 @@ const UserDashboard = () => {
             </div>
           )}
 
-          {/* ── QUIZZES TAB ── */}
+          {/* ── QUIZZES TAB (REVISED) ── */}
           {activeTab === 'quizzes' && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               {isLoading ? (
                 <p className="text-sm text-gray-400">Loading quizzes...</p>
               ) : selectedQuiz ? (
-                <TakeQuiz quiz={selectedQuiz} onQuizSubmit={() => setSelectedQuiz(null)} />
+                // Added callback to refresh quizzes after submission
+                <TakeQuiz 
+                  quiz={selectedQuiz} 
+                  onQuizSubmit={() => {
+                    setSelectedQuiz(null);
+                    fetchQuizzes(); 
+                  }} 
+                />
               ) : (
-                <QuizList quizzes={quizzes} onTakeQuiz={setSelectedQuiz} />
+                // Added currentUserId prop
+                <QuizList 
+                  quizzes={quizzes} 
+                  onTakeQuiz={setSelectedQuiz} 
+                  currentUserId={user.id} 
+                />
               )}
             </div>
           )}
