@@ -1,7 +1,9 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const { solveStudentDoubt } = require("../controllers/doubtController");
+const { solveDoubt } = require('../controllers/doubtController');
+// const { authMiddleware } = require('../middleware/auth'); // Uncomment if you have auth
 
-router.post("/solveDoubt", solveStudentDoubt);
+// Matching the endpoint in your React code: /api/v1/solveDoubt
+router.post('/solveDoubt', solveDoubt); 
 
 module.exports = router;

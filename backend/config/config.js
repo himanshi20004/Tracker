@@ -11,7 +11,8 @@ const config = {
     SMTP_PASSWORD: process.env.SMTP_PASSWORD || "",
     SMTP_EMAIL: process.env.SMTP_EMAIL || "example@gmail.com",
     SMTP_HOST: process.env.SMTP_HOST || "smtp.gmail.com",
-    SMTP_PORT: process.env.SMTP_PORT || 465
+    SMTP_PORT: process.env.SMTP_PORT || 465,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 };
 
 module.exports = config;

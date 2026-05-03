@@ -1,38 +1,38 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Load your Gemini API key from environment variables (recommended)
-const genAI = new GoogleGenerativeAI("AIzaSyBI2JVOeY3Hx70PzykrRsRIcnqMF8vNqCM");
+const solveDoubt = async (req, res) => {
+    try {
+        const { doubt } = req.body;
 
-async function solveStudentDoubt(req, res) {
-  const { doubt } = req.body;
+        if (!doubt) {
+            return res.status(400).json({ error: "Please provide a doubt/question." });
+        }
 
-  if (!doubt || doubt.trim() === "") {
-    return res.status(400).send("Doubt cannot be empty.");
-  }
+        // Initialize Gemini (Ensure your API Key is in .env)
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        
+        // Use gemini-1.5-flash for fast, efficient study assistance
+        const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" });
 
-  try {
-    const prompt = `
-You are a knowledgeable and friendly tutor for high school and college students.
-Your job is to answer students' academic doubts in a simple, clear, and helpful way.
+        const prompt = `You are a helpful AI Tutor. Provide a clear, step-by-step explanation for the following student doubt: \n\n ${doubt}`;
 
-Student's Doubt:
-"${doubt}"
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
 
-Give a detailed, easy-to-understand explanation.
-If it's a math or code problem, show step-by-step solution.
-Avoid irrelevant text or markdown formatting.
-`;
+        // Returning the answer in the format your frontend expects
+        res.status(200).json({
+            success: true,
+            answer: text
+        });
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = await response.text();
+    } catch (error) {
+        console.error("Gemini API Error:", error);
+        res.status(500).json({ 
+            success: false, 
+            answer: "⚠️ The AI tutor is currently resting. Please try again in a moment." 
+        });
+    }
+};
 
-    res.send(text);
-  } catch (error) {
-    console.error("Error solving doubt:", error);
-    res.status(500).send("Something went wrong while solving the doubt.");
-  }
-}
-
-module.exports = { solveStudentDoubt };
+module.exports = { solveDoubt };
