@@ -8,7 +8,7 @@ import AdminDashboard from './components/AdminDashboard';
 import UserDashboard from './components/UserDashboard';
 import Leaderboard from './components/Leaderboard';
 import Timetable from './components/Timetable';
-import ResourcesPage from './components/resourcepage';
+import ResourcesPage from './components/ResourcePage';
 import ResourceUpload from './components/ResourceUpload';
 import CreateQuizForm from './components/Quizcreation';
 import { ToastContainer } from 'react-toastify';
