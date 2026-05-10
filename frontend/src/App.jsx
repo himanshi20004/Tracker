@@ -36,7 +36,7 @@ const App = () => {
         <Route path="/admin/create-quiz" element={<CreateQuizForm />} /> 
         <Route path="/store" element={<Store/>} />
         <Route path="/Chat" element={<ChatUI socket={socket}/>}/>
-        <Route path="/doubt" element={<Doubt/>}/>
+        <Route path="/Doubt" element={<Doubt/>}/>
         
         
       </Routes>

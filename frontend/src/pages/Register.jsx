@@ -65,7 +65,7 @@ const Registration = () => {
           </h2>
 
           <p className="text-gray-500 text-[15px] leading-relaxed mb-10">
-            Join 50,000+ students already learning smarter with structured courses, live mentors, and smart study tools.
+            Join 500+ students already learning smarter with structured courses, live mentors, and smart study tools.
           </p>
 
           {/* Feature bullets */}

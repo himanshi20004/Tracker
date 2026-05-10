@@ -90,9 +90,9 @@ const AdminDashboard = () => {
                         📅 Timetable
                     </Link>
                     <Link to="/chat" className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14px] font-medium text-gray-600 hover:bg-gray-50 transition">
-                        💬 Chat with friends
+                        💬 Chat 
                     </Link>
-                    <Link to="/doubts" className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14px] font-medium text-gray-600 hover:bg-gray-50 transition">
+                    <Link to="/Doubt" className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14px] font-medium text-gray-600 hover:bg-gray-50 transition">
                         ❓ Doubts
                     </Link>
                     <Link to="/upload" className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14px] font-medium text-gray-600 hover:bg-gray-50 transition">

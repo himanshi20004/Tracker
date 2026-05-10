@@ -4,24 +4,23 @@ import { useNavigate } from 'react-router-dom';
 import RedirectButton from './Redirectbuttton';
 import Timetable from './Timetable';
 import ResourcesList from './ResourceList';
-import ChatUI from './Chat';
 import { toast } from 'react-toastify';
 import QuizList from './QuizList';
 import TakeQuiz from './Takequiz';
 import Doubt from './Doubt';
 import coin from '../assets/coin.png';
-
+import Leaderboard from './Leaderboard'
 const NAV_ITEMS = [
   { id: 'tasks',     label: 'My Tasks',   icon: '✅' },
   { id: 'quizzes',   label: 'Quizzes',    icon: '🧠' },
   { id: 'resources', label: 'Resources',  icon: '📚' },
+  { id: 'leaderboard', label: 'Leaderboard', icon: '🏆' }, // New Item
   { id: 'timetable', label: 'Timetable',  icon: '📅' },
   { id: 'chat',      label: 'Chat',       icon: '💬' },
   { id: 'doubt',     label: 'Doubt',      icon: '🙋' },
 ];
 
 const UserDashboard = () => {
-  // REVISED: Added 'id' to the state object to track current user
   const [user, setUser] = useState({ id: '', name: '', points: 0, completedTasks: [] });
   const [tasks, setTasks] = useState([]);
   const [completedTaskDetails, setCompletedTaskDetails] = useState([]);
@@ -31,7 +30,6 @@ const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState('tasks');
   const navigate = useNavigate();
 
-  /* ── data fetching (unchanged logic) ── */
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -39,7 +37,6 @@ const UserDashboard = () => {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         const userData = res.data.user;
-        // REVISED: Storing the user's _id so QuizList can use it
         setUser({ 
           id: userData?._id, 
           name: userData?.username || 'No Name', 
@@ -67,7 +64,6 @@ const UserDashboard = () => {
     fetchUserData();
   }, []);
 
-  // REVISED: Extracted this function so we can call it again after a quiz is submitted
   const fetchQuizzes = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -114,7 +110,6 @@ const UserDashboard = () => {
     navigate('/login');
   };
 
-  /* ── deadline helpers ── */
   const getDeadlineStatus = (deadline) => {
     const diff = new Date(deadline) - new Date();
     if (diff <= 0) return { label: 'Deadline passed', expired: true };
@@ -124,7 +119,6 @@ const UserDashboard = () => {
     return { label: `${d > 0 ? `${d}d ` : ''}${h}h ${m}m left`, expired: false };
   };
 
-  /* ── avatar initials ── */
   const initials = user.name ? user.name.slice(0, 2).toUpperCase() : 'US';
 
   return (
@@ -164,7 +158,7 @@ const UserDashboard = () => {
           {NAV_ITEMS.map(item => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => item.id === 'chat' ? navigate('/chat') : setActiveTab(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14px] font-medium transition-all ${
                 activeTab === item.id
                   ? 'bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md shadow-purple-100'
@@ -179,13 +173,6 @@ const UserDashboard = () => {
 
         {/* Bottom actions */}
         <div className="px-4 pb-6 pt-4 border-t border-gray-100 space-y-2 mt-2">
-          <button
-            onClick={() => window.open('/resources', '_blank')}
-            className="w-full px-4 py-2.5 text-[13px] font-medium text-purple-700 bg-purple-50 border border-purple-100 rounded-xl hover:bg-purple-100 transition"
-          >
-            📂 Shared Resources
-          </button>
-          
           <button
             onClick={handleLogout}
             className="w-full px-4 py-2.5 text-[13px] font-medium text-red-600 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition"
@@ -223,8 +210,6 @@ const UserDashboard = () => {
           {/* ── TASKS TAB ── */}
           {activeTab === 'tasks' && (
             <div className="space-y-6">
-
-              {/* Summary cards */}
               <div className="grid grid-cols-3 gap-4">
                 {[
                   { label: 'Pending Tasks',    val: tasks.length,                  color: 'purple' },
@@ -238,7 +223,6 @@ const UserDashboard = () => {
                 ))}
               </div>
 
-              {/* Pending tasks */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-50">
                   <h2 className="text-base font-semibold text-gray-900">Pending Tasks</h2>
@@ -282,7 +266,6 @@ const UserDashboard = () => {
                 )}
               </div>
 
-              {/* Completed tasks */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-50">
                   <h2 className="text-base font-semibold text-gray-900">Completed Tasks</h2>
@@ -303,13 +286,12 @@ const UserDashboard = () => {
             </div>
           )}
 
-          {/* ── QUIZZES TAB (REVISED) ── */}
+          {/* ── QUIZZES TAB ── */}
           {activeTab === 'quizzes' && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               {isLoading ? (
                 <p className="text-sm text-gray-400">Loading quizzes...</p>
               ) : selectedQuiz ? (
-                // Added callback to refresh quizzes after submission
                 <TakeQuiz 
                   quiz={selectedQuiz} 
                   onQuizSubmit={() => {
@@ -318,7 +300,6 @@ const UserDashboard = () => {
                   }} 
                 />
               ) : (
-                // Added currentUserId prop
                 <QuizList 
                   quizzes={quizzes} 
                   onTakeQuiz={setSelectedQuiz} 
@@ -334,21 +315,21 @@ const UserDashboard = () => {
               <ResourcesList />
             </div>
           )}
-
+          
+          {/* ── LEADERBOARD TAB ── */}
+{activeTab === 'leaderboard' && (
+  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+    <Leaderboard />
+  </div>
+)}
           {/* ── TIMETABLE TAB ── */}
           {activeTab === 'timetable' && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <Timetable />
             </div>
           )}
-
-          {/* ── CHAT TAB ── */}
-          {activeTab === 'chat' && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <ChatUI />
-            </div>
-          )}
-
+           
+          
           {/* ── DOUBT TAB ── */}
           {activeTab === 'doubt' && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">

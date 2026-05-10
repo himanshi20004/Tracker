@@ -99,17 +99,7 @@ export default function Homepage() {
           <span className="text-xl font-semibold text-gray-900">StudyWave</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-9 text-[15px] text-gray-600 font-medium">
-          {["Courses", "Mentorship", "Study Tools", "Contact"].map((item) => (
-            <Link
-              key={item}
-              to={`/${item.toLowerCase().replace(" ", "-")}`}
-              className="hover:text-purple-600 transition-colors"
-            >
-              {item}
-            </Link>
-          ))}
-        </div>
+        
 
         <div className="flex items-center gap-3">
           <Link
@@ -163,12 +153,7 @@ export default function Homepage() {
             >
               Start Learning Free →
             </Link>
-            <Link
-              to="/courses"
-              className="px-7 py-3 text-[15px] text-gray-700 rounded-xl border border-gray-200 hover:bg-gray-50 transition"
-            >
-              Browse Courses
-            </Link>
+            
           </div>
 
           <div className="flex items-center gap-8">
@@ -304,12 +289,7 @@ export default function Homepage() {
             >
               Get Started for Free
             </Link>
-            <Link
-              to="/courses"
-              className="px-8 py-3.5 text-[15px] font-semibold text-white border border-white/40 rounded-xl hover:bg-white/10 transition"
-            >
-              Browse Courses
-            </Link>
+            
           </div>
         </motion.div>
       </section>
