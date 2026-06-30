@@ -1,8 +1,8 @@
-# 🌊 StudyWave (formerly LearnMate)
+# 🌊 StudyWave 
 
 **StudyWave** is a full-stack, gamified learning platform designed to make education engaging, structured, and collaborative. Built with the MERN stack, it features real-time chat, an AI-powered doubt assistant, interactive quizzes, and a gamified task management system to keep students motivated.
 
-![Landing Page](./assets/Screenshot%202026-06-30%20170915.jpg)
+![Landing Page](./assets/Screenshot%202026-06-30%20170915.png)
 
 ---
 
