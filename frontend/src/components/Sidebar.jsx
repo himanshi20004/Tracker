@@ -13,7 +13,7 @@ const Sidebar = ({ setChatInitiated, setChats, socket, setReceiverId, setReceive
         const token = localStorage.getItem('token');
         if (!token) { toast.error('You must be logged in'); return; }
 
-        const response = await fetch('http://localhost:5000/api/v1/users', {
+        const response = await fetch('${import.meta.env.VITE_API_URL}/api/v1/users', {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -36,7 +36,7 @@ const Sidebar = ({ setChatInitiated, setChats, socket, setReceiverId, setReceive
       const token = localStorage.getItem('token');
       if (!token) { toast.error('You must be logged in'); return; }
 
-      const response = await axios.get(`http://localhost:5000/api/v1/read/${user._id}`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/read/${user._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

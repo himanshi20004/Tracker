@@ -15,7 +15,7 @@ const Form = ({ receiverId, setChats, chats }) => {
         return;
       }
 
-      const response = await axios.post('http://localhost:5000/api/v1/send/' + receiverId, { content: message }, {
+      const response = await axios.post('${import.meta.env.VITE_API_URL}/api/v1/send/' + receiverId, { content: message }, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

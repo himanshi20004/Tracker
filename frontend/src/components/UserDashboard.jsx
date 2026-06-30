@@ -33,7 +33,7 @@ const UserDashboard = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/v1/me', {
+        const res = await axios.get('${import.meta.env.VITE_API_URL}/api/v1/me', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         const userData = res.data.user;
@@ -46,14 +46,14 @@ const UserDashboard = () => {
 
         if (userData.completedTasks.length > 0) {
           const ctRes = await axios.post(
-            'http://localhost:5000/api/v1/details',
+            '${import.meta.env.VITE_API_URL}/api/v1/details',
             { taskIds: userData.completedTasks },
             { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
           );
           setCompletedTaskDetails(ctRes.data.tasks);
         }
 
-        const taskRes = await axios.get('http://localhost:5000/api/v1/task', {
+        const taskRes = await axios.get('${import.meta.env.VITE_API_URL}/api/v1/task', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
         setTasks(taskRes.data.tasks.filter(t => !userData.completedTasks.includes(t._id)));
@@ -68,7 +68,7 @@ const UserDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) { toast.error('You must be logged in to view quizzes.'); return; }
-      const res = await axios.get('http://localhost:5000/api/v1/getquizzes', {
+      const res = await axios.get('${import.meta.env.VITE_API_URL}/api/v1/getquizzes', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data?.quizzes) setQuizzes(res.data.quizzes);
@@ -91,7 +91,7 @@ const UserDashboard = () => {
       const updatedPoints         = user.points + task.points;
       const updatedCompletedTasks = [...user.completedTasks, taskId];
       await axios.patch(
-        'http://localhost:5000/api/v1/user/update',
+        '${import.meta.env.VITE_API_URL}/api/v1/user/update',
         { completedTasks: updatedCompletedTasks, points: updatedPoints },
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );

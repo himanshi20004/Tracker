@@ -17,7 +17,7 @@ import Store from './components/Store';
 import ChatUI from './components/Chat';
 import io from 'socket.io-client'
 import Doubt from './components/Doubt';
-const socket=io.connect('http://localhost:8000')  //connecting with socket.io 
+const socket=io.connect(import.meta.env.VITE_SOCKET_URL)  //connecting with socket.io 
 
 const App = () => {
   return (

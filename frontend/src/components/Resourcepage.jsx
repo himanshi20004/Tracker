@@ -12,7 +12,7 @@ const ResourcesPage = () => {
     useEffect(() => {
         async function fetchResources() {
             try {
-                const response = await axios.get('http://localhost:5000/api/v1/resources', {
+                const response = await axios.get('${import.meta.env.VITE_API_URL}/api/v1/resources', {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
                 });
                 setResources(response.data || []);
@@ -94,7 +94,7 @@ const ResourcesPage = () => {
                                 
                                 {/* FIXED: Proper <a> tag with attributes */}
                                 <a
-                                    href={`http://localhost:5000/${resource.fileUrl}`}
+                                    href={`${import.meta.env.VITE_API_URL}/${resource.fileUrl}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="w-full text-center py-2.5 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-blue-500 rounded-xl hover:opacity-90 transition shadow-sm"

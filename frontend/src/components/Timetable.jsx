@@ -23,7 +23,7 @@ const Timetable = () => {
             const token = getAuthToken();
             const user = getUserData();
             if (!user.id) return;
-            const response = await axios.get(`http://localhost:5000/api/v1/timetable/${user.id}`, {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/timetable/${user.id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setUserTimetable(response.data || {});
@@ -38,7 +38,7 @@ const Timetable = () => {
         const user = getUserData();
         try {
             const token = getAuthToken();
-            await axios.post(`http://localhost:5000/api/v1/timetable/${user.id}`, {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/v1/timetable/${user.id}`, {
                 date: formattedDate,
                 detail: eventDetails
             }, {
@@ -56,7 +56,7 @@ const Timetable = () => {
         const user = getUserData();
         try {
             const token = getAuthToken();
-            await axios.put(`http://localhost:5000/api/v1/timetable/${user.id}`, {
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/v1/timetable/${user.id}`, {
                 date: selectedEvent.date,
                 index: selectedEvent.index,
                 detail: eventDetails
@@ -74,7 +74,7 @@ const Timetable = () => {
         const user = getUserData();
         try {
             const token = getAuthToken();
-            await axios.delete(`http://localhost:5000/api/v1/timetable/${user.id}/${indexToDelete}?date=${eventDate}`, {
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/v1/timetable/${user.id}/${indexToDelete}?date=${eventDate}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             fetchTimetable();

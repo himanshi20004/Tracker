@@ -7,7 +7,7 @@ const Leaderboard = () => {
     useEffect(() => {
         const fetchLeaderboard = async () => {
             try {
-                const response = await axios.get('http://localhost:5000/api/v1/leaderboard', {
+                const response = await axios.get('${import.meta.env.VITE_API_URL}/api/v1/leaderboard', {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     },

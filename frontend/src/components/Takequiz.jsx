@@ -49,7 +49,7 @@ const TakeQuiz = ({ quiz, onQuizSubmit }) => {
       }));
 
       const response = await axios.post(
-        `http://localhost:5000/api/v1/quizzes/${quiz._id}/submit`,
+        `${import.meta.env.VITE_API_URL}/api/v1/quizzes/${quiz._id}/submit`,
         { quizId: quiz._id, answers: submissionAnswers },
         { headers: { Authorization: `Bearer ${token}` } }
       );
