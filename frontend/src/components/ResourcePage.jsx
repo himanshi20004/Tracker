@@ -12,7 +12,7 @@ const ResourcesPage = () => {
     useEffect(() => {
         async function fetchResources() {
             try {
-                const response = await axios.get('${import.meta.env.VITE_API_URL}/api/v1/resources', {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/resources`, {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
                 });
                 setResources(response.data || []);

@@ -17,7 +17,7 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchTasks = async () => {
             try {
-                const response = await axios.get('http://localhost:5000/api/v1/task', {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/task`, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
                 setTasks(response.data.tasks);
@@ -37,12 +37,12 @@ const AdminDashboard = () => {
         e.preventDefault();
         try {
             if (editingTaskId) {
-                await axios.put(`http://localhost:5000/api/v1/task/${editingTaskId}`, taskData, {
+                await axios.put(`${import.meta.env.VITE_API_URL}/api/v1/task/${editingTaskId}`, taskData, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
                 setTasks(tasks.map(task => (task._id === editingTaskId ? { ...task, ...taskData } : task)));
             } else {
-                const response = await axios.post('http://localhost:5000/api/v1/task', taskData, {
+                const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/v1/task`, taskData, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
                 setTasks([...tasks, response.data.task]);
@@ -56,7 +56,7 @@ const AdminDashboard = () => {
 
     const deleteTask = async (taskId) => {
         try {
-            await axios.delete(`http://localhost:5000/api/v1/task/${taskId}`, {
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/v1/task/${taskId}`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             setTasks(tasks.filter(task => task._id !== taskId));

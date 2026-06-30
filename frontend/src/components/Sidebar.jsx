@@ -13,7 +13,7 @@ const Sidebar = ({ setChatInitiated, setChats, socket, setReceiverId, setReceive
         const token = localStorage.getItem('token');
         if (!token) { toast.error('You must be logged in'); return; }
 
-        const response = await fetch('${import.meta.env.VITE_API_URL}/api/v1/users', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/users`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

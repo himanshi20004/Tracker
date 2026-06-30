@@ -49,7 +49,7 @@ const CreateQuizForm = () => {
     const token = localStorage.getItem('token');
     try {
       await axios.post(
-        '${import.meta.env.VITE_API_URL}/api/v1/postquizzes',
+        `${import.meta.env.VITE_API_URL}/api/v1/postquizzes`,
         { title, questions, timer: parseInt(timer, 10), deadline },
         { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
       );
