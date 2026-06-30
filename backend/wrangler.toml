@@ -1,8 +1,0 @@
-name = "learnmate-backend"
-main = "worker.js"
-compatibility_date = "2024-05-10"
-compatibility_flags = ["nodejs_compat"]
-
-# We will put our environment variables here later!
-# [vars]
-# DB_URI = "..."
