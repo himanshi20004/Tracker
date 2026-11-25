@@ -1,25 +1,38 @@
-
+const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
+const ErrorHander = require('../utils/errorhander');
+
+const uploadDir = path.join(__dirname, '..', 'uploads');
+fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Folder to save uploaded files
+        cb(null, 'uploads/');
     },
     filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`); // Name the file
-    }
+        const baseName = path.basename(file.originalname, path.extname(file.originalname))
+            .replace(/[^a-zA-Z0-9._-]/g, '_')
+            .slice(0, 80);
+        const safeName = `${Date.now()}-${baseName || 'resource'}.pdf`;
+        cb(null, safeName);
+    },
 });
 
 const upload = multer({
-    storage: storage,
+    storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB max
+        files: 1,
+    },
     fileFilter: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        if (ext !== '.pdf') {
-            return cb(new Error('Only PDFs are allowed'));
+        const ext = path.extname(file.originalname || '').toLowerCase();
+        const isPdfMime = file.mimetype === 'application/pdf';
+        if (ext !== '.pdf' || !isPdfMime) {
+            return cb(new ErrorHander('Only valid PDF files are allowed', 400));
         }
         cb(null, true);
-    }
+    },
 });
 
 module.exports = upload;

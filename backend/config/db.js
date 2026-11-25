@@ -1,15 +1,13 @@
 const mongoose = require('mongoose');
 
-const connectDatabse = () => {
-    console.log(`Connecting to database at ${process.env.DB_URI}`);
-    mongoose.connect(process.env.DB_URI)
-        .then((data) => {
-            console.log(`MongoDB connected with server: ${data.connection.host}`);
-        })
-        .catch(err => {
-            console.error(`Database connection error: ${err.message}`);
-            process.exit(1);
-        });
+const connectDatabase = async () => {
+    if (!process.env.DB_URI) {
+        throw new Error('DB_URI environment variable is not set');
+    }
+
+    const data = await mongoose.connect(process.env.DB_URI);
+    console.log(`MongoDB connected with host: ${data.connection.host}`);
+    return data;
 };
 
-module.exports = connectDatabse;
+module.exports = connectDatabase;

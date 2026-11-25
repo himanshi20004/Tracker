@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { solveDoubt } = require('../controllers/doubtController');
-// const { authMiddleware } = require('../middleware/auth'); // Uncomment if you have auth
+const { isAuthenticatedUser } = require('../middleware/auth');
+const { aiLimiter } = require('../middleware/rateLimiters');
 
-// Matching the endpoint in your React code: /api/v1/solveDoubt
-router.post('/solveDoubt', solveDoubt); 
+router.post('/solveDoubt', isAuthenticatedUser, aiLimiter, solveDoubt);
 
 module.exports = router;

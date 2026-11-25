@@ -1,73 +1,109 @@
 const mongoose = require('mongoose');
-const validator = require("validator");
-const bcrypt = require("bcryptjs");
+const validator = require('validator');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 const UserSchema = new mongoose.Schema({
     username: {
         type: String,
-        required: true,
+        required: [true, 'Username is required'],
+        trim: true,
+        minlength: [2, 'Username must be at least 2 characters'],
+        maxlength: [50, 'Username cannot exceed 50 characters'],
     },
     email: {
         type: String,
-        required: true,
+        required: [true, 'Email is required'],
         unique: true,
+        lowercase: true,
+        trim: true,
+        validate: [validator.isEmail, 'Please enter a valid email address'],
     },
     password: {
         type: String,
-        required: true,
+        required: [true, 'Password is required'],
+        minlength: [8, 'Password must be at least 8 characters'],
+        select: false,
     },
     role: {
         type: String,
         enum: ['user', 'admin'],
-        default: 'user'
+        default: 'user',
     },
     completedTasks: [
         {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Task'
-        }
+            ref: 'Task',
+        },
     ],
     timetable: {
         type: Map,
-        of: [String], // Each date key in the timetable Map will store an array of strings (events)
+        of: [String],
         default: {},
     },
-    
+    points: {
+        type: Number,
+        default: 0,
+        min: 0,
+    },
+    resetPasswordToken: {
+        type: String,
+        select: false,
+    },
+    resetPasswordExpire: {
+        type: Date,
+        select: false,
+    },
+    passwordChangedAt: {
+        type: Date,
+        select: false,
+    },
     createdAt: {
         type: Date,
-        default: Date.now
+        default: Date.now,
     },
-    points: { type: Number, default: 0 },
-},{ strict: false });
+});
 
-// Password hashing before saving user
-UserSchema.pre("save", async function(next) {
-    if (!this.isModified("password")) {
-        return next();  // If password hasn't changed, move to the next middleware
+UserSchema.index({ points: -1 });
+
+UserSchema.set('toJSON', {
+    transform: (doc, ret) => {
+        delete ret.password;
+        delete ret.resetPasswordToken;
+        delete ret.resetPasswordExpire;
+        delete ret.passwordChangedAt;
+        delete ret.__v;
+        return ret;
+    },
+});
+
+UserSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) {
+        return next();
     }
     this.password = await bcrypt.hash(this.password, 10);
     next();
 });
 
-// Generate JWT token
-UserSchema.methods.getJWTToken = function() {
-    return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRE,
+UserSchema.methods.getJWTToken = function () {
+    if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET is not configured');
+    }
+    return jwt.sign({ id: this._id, role: this.role }, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRE || '5d',
     });
 };
 
-// Compare passwords
-UserSchema.methods.comparePassword = async function(enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
+UserSchema.methods.comparePassword = async function (enteredPassword) {
+    if (!enteredPassword || !this.password) return false;
+    return bcrypt.compare(enteredPassword, this.password);
 };
 
-// Generate password reset token
-UserSchema.methods.getResetPasswordToken = function() {
-    const resetToken = crypto.randomBytes(20).toString("hex");
-    this.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
-    this.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
+UserSchema.methods.getResetPasswordToken = function () {
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    this.resetPasswordExpire = new Date(Date.now() + 15 * 60 * 1000);
     return resetToken;
 };
 
