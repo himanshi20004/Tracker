@@ -1,0 +1,14 @@
+# Root-level gitignore
+# Node
+node_modules/
+
+# Environment files
+.env
+*.env
+
+# Large generated output files
+repomix-output.xml
+
+# OS
+.DS_Store
+Thumbs.db

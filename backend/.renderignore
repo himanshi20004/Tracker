@@ -1,0 +1,13 @@
+# Render build upload ignore file
+# Excludes files from the artifact uploaded to Render's storage
+
+# Test suite (not needed in production)
+tests/
+
+# Uploaded user files (should use cloud storage in production, not committed to git)
+uploads/
+
+# Dev tooling
+*.md
+.gitignore
+config/config.env.example

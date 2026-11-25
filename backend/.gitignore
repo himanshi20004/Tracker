@@ -1,6 +1,10 @@
-node_modules
+node_modules/
 .env
 .env.*
 config/config.env
 !config/config.env.example
 *.log
+
+# User-uploaded files — use cloud storage in production
+uploads/*
+!uploads/.gitkeep
