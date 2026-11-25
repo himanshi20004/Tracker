@@ -143,4 +143,20 @@ describe('AI Doubt, Timetable, Chat & Upload Security', () => {
 
         expect(res.status).toBe(403);
     });
+
+    test('CORS allows Vercel project git-branch/preview origins and blocks unknown origins', async () => {
+        const vercelBranchOrigin = 'https://tracker-ksb7-git-main-himanshis-projects-82747101.vercel.app';
+        const allowedRes = await request(app)
+            .options('/api/v1/register')
+            .set('Origin', vercelBranchOrigin)
+            .set('Access-Control-Request-Method', 'POST');
+        expect(allowedRes.status).toBe(204);
+        expect(allowedRes.headers['access-control-allow-origin']).toBe(vercelBranchOrigin);
+
+        const blockedRes = await request(app)
+            .options('/api/v1/register')
+            .set('Origin', 'https://evil-site.example.com')
+            .set('Access-Control-Request-Method', 'POST');
+        expect(blockedRes.status).toBe(403);
+    });
 });

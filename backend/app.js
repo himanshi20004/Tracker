@@ -25,14 +25,19 @@ const defaultOrigins = [
     'https://tracker-ksb7.vercel.app',
 ];
 
+const VERCEL_PROJECT_ORIGIN_REGEX = /^https:\/\/tracker-ksb7(-[a-z0-9-]+)?\.vercel\.app$/;
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
     : defaultOrigins;
 
+const isAllowedOrigin = (origin) =>
+    !origin || allowedOrigins.includes(origin) || VERCEL_PROJECT_ORIGIN_REGEX.test(origin);
+
 app.use(
     cors({
         origin: (origin, callback) => {
-            if (!origin || allowedOrigins.includes(origin)) {
+            if (isAllowedOrigin(origin)) {
                 return callback(null, true);
             }
             return callback(new ErrorHandler('Not allowed by CORS', 403));

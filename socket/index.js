@@ -10,6 +10,8 @@ const DEFAULT_ORIGINS = [
     'https://tracker-ksb7.vercel.app',
 ];
 
+const VERCEL_PROJECT_ORIGIN_REGEX = /^https:\/\/tracker-ksb7(-[a-z0-9-]+)?\.vercel\.app$/;
+
 const getAllowedOrigins = () =>
     process.env.ALLOWED_ORIGINS
         ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
@@ -25,7 +27,7 @@ const createSocketServer = (jwtSecret = process.env.JWT_SECRET) => {
     const io = new Server(server, {
         cors: {
             origin: (origin, callback) => {
-                if (!origin || allowedOrigins.includes(origin)) {
+                if (!origin || allowedOrigins.includes(origin) || VERCEL_PROJECT_ORIGIN_REGEX.test(origin)) {
                     return callback(null, true);
                 }
                 return callback(new Error('Origin not allowed by CORS'));
