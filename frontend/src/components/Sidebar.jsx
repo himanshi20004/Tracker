@@ -1,31 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import api from '../utils/api';
 
-const Sidebar = ({ setChatInitiated, setChats, socket, setReceiverId, setReceiverName }) => {
+const Sidebar = ({ setChatInitiated, setChats, setReceiverId, setReceiverName, onlineUserIds = [] }) => {
   const [users, setUsers] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) { toast.error('You must be logged in'); return; }
-
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/users`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!response.ok) {
-          toast.error('Failed to fetch users');
-          return;
-        }
-
-        const data = await response.json();
-        setUsers(data || []);
+        const res = await api.get('/users');
+        setUsers(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
-        toast.error('Error fetching users');
+        toast.error(error.response?.data?.message || 'Failed to fetch contacts');
+      } finally {
+        setLoading(false);
       }
     };
     fetchUsers();
@@ -33,34 +24,29 @@ const Sidebar = ({ setChatInitiated, setChats, socket, setReceiverId, setReceive
 
   const startChat = async (user) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) { toast.error('You must be logged in'); return; }
+      const response = await api.get(`/read/${user._id}`);
+      const msgs = Array.isArray(response.data)
+        ? response.data
+        : response.data?.messages || [];
 
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/read/${user._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      setChats(Array.isArray(response.data) ? response.data : []);
-      socket.emit('join', user._id);
+      setChats(msgs);
       setChatInitiated(true);
       setReceiverId(user._id);
-      setReceiverName(user.username);   // ← wires up the name for chat header
+      setReceiverName(user.username);
       setActiveId(user._id);
     } catch (error) {
-      toast.error('Error starting chat');
+      toast.error(error.response?.data?.message || 'Error loading conversation');
     }
   };
 
-  const getInitials = (name) => name ? name.slice(0, 2).toUpperCase() : '??';
+  const getInitials = (name) => (name ? name.slice(0, 2).toUpperCase() : '??');
 
-  const filtered = users.filter(u =>
-    u.username.toLowerCase().includes(search.toLowerCase())
+  const filtered = users.filter((u) =>
+    u.username?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="flex flex-col h-full">
-
-      {/* Search */}
       <div className="px-1 pb-3">
         <input
           type="text"
@@ -71,11 +57,13 @@ const Sidebar = ({ setChatInitiated, setChats, socket, setReceiverId, setReceive
         />
       </div>
 
-      {/* Contact list */}
       <div className="flex-1 overflow-y-auto space-y-0.5">
-        {filtered.length > 0 ? (
+        {loading ? (
+          <p className="text-center text-xs text-gray-400 py-8">Loading contacts...</p>
+        ) : filtered.length > 0 ? (
           filtered.map((user) => {
             const isActive = activeId === user._id;
+            const isOnline = onlineUserIds.includes(user._id);
             return (
               <div
                 key={user._id}
@@ -86,31 +74,26 @@ const Sidebar = ({ setChatInitiated, setChats, socket, setReceiverId, setReceive
                     : 'hover:bg-gray-50'
                 }`}
               >
-                {/* Avatar */}
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                  isActive
-                    ? 'bg-white/20 text-white'
-                    : 'bg-gradient-to-br from-purple-100 to-blue-100 text-purple-700'
-                }`}>
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : 'bg-gradient-to-br from-purple-100 to-blue-100 text-purple-700'
+                  }`}
+                >
                   {getInitials(user.username)}
                 </div>
 
-                {/* Name */}
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-semibold truncate ${
-                    isActive ? 'text-white' : 'text-gray-800'
-                  }`}>
+                  <p className={`text-sm font-semibold truncate ${isActive ? 'text-white' : 'text-gray-800'}`}>
                     {user.username}
                   </p>
-                  <p className={`text-xs truncate ${
-                    isActive ? 'text-white/70' : 'text-gray-400'
-                  }`}>
-                    Tap to chat
+                  <p className={`text-xs truncate ${isActive ? 'text-white/70' : 'text-gray-400'}`}>
+                    {isOnline ? 'Online' : 'Tap to chat'}
                   </p>
                 </div>
 
-                {/* Active indicator dot */}
-                {!isActive && (
+                {isOnline && !isActive && (
                   <div className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
                 )}
               </div>

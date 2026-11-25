@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api, { buildFileUrl } from '../utils/api';
 
 const ResourcesPage = () => {
     const [resources, setResources] = useState([]);
@@ -12,12 +12,10 @@ const ResourcesPage = () => {
     useEffect(() => {
         async function fetchResources() {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/resources`, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
-                setResources(response.data || []);
+                const response = await api.get('/resources');
+                setResources(Array.isArray(response.data) ? response.data : []);
             } catch (err) {
-                setError('Could not load resources. Please try again.');
+                setError(err.response?.data?.message || 'Could not load resources. Please try again.');
             } finally {
                 setLoading(false);
             }
@@ -25,16 +23,14 @@ const ResourcesPage = () => {
         fetchResources();
     }, []);
 
-    const filtered = resources.filter(r =>
+    const filtered = resources.filter((r) =>
         r.title?.toLowerCase().includes(search.toLowerCase()) ||
         r.description?.toLowerCase().includes(search.toLowerCase())
     );
 
     return (
         <div className="min-h-screen bg-gray-50 font-sans">
-
-            {/* Header */}
-            <header className="sticky top-0 z-10 bg-white border-b border-gray-100 shadow-sm px-8 py-4 flex items-center justify-between">
+            <header className="sticky top-0 z-10 bg-white border-b border-gray-100 shadow-sm px-6 sm:px-8 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center shadow">
                         <div className="w-2 h-2 bg-white rounded-full" />
@@ -49,9 +45,7 @@ const ResourcesPage = () => {
                 </button>
             </header>
 
-            <div className="max-w-4xl mx-auto px-8 py-8">
-
-                {/* Page title + search */}
+            <div className="max-w-4xl mx-auto px-6 sm:px-8 py-8">
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">Resources</h1>
@@ -66,7 +60,6 @@ const ResourcesPage = () => {
                     />
                 </div>
 
-                {/* States */}
                 {loading ? (
                     <div className="flex justify-center py-20">
                         <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
@@ -83,7 +76,7 @@ const ResourcesPage = () => {
                                 className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-purple-200 transition flex flex-col gap-3"
                             >
                                 <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-2xl">
-                                    {resource.fileUrl?.endsWith('.pdf') ? '📄' : '📁'}
+                                    {resource.fileUrl?.toLowerCase().endsWith('.pdf') ? '📄' : '📁'}
                                 </div>
                                 <div className="flex-1">
                                     <p className="text-sm font-bold text-gray-900 line-clamp-1">{resource.title}</p>
@@ -91,10 +84,9 @@ const ResourcesPage = () => {
                                         <p className="text-xs text-gray-400 mt-1 line-clamp-2">{resource.description}</p>
                                     )}
                                 </div>
-                                
-                                {/* FIXED: Proper <a> tag with attributes */}
+
                                 <a
-                                    href={`${import.meta.env.VITE_API_URL}/${resource.fileUrl}`}
+                                    href={buildFileUrl(resource.fileUrl)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="w-full text-center py-2.5 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-blue-500 rounded-xl hover:opacity-90 transition shadow-sm"

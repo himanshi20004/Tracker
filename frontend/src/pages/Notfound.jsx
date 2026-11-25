@@ -1,81 +1,37 @@
-import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { getStoredUser } from '../utils/api';
 
-const WorkInProgress = ({ featureName = "This Feature" }) => {
+const Notfound = () => {
     const navigate = useNavigate();
+    const user = getStoredUser();
+    const dashboardPath = user?.role === 'admin' ? '/adminDashboard' : '/userDashboard';
 
     return (
-        <div className="min-h-screen flex bg-gray-50 font-sans">
-            {/* ═══ SIDEBAR (Consistent with App) ═══ */}
-            <aside className="w-64 shrink-0 flex flex-col bg-white border-r border-gray-100 shadow-sm min-h-screen">
-                <div className="flex items-center gap-2.5 px-6 py-5 border-b border-gray-100">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center shadow">
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                    </div>
-                    <span className="text-lg font-bold text-gray-900">StudyWave</span>
-                </div>
-
-                <nav className="flex-1 px-3 space-y-1 mt-4">
-                    <Link to="/adminDashboard" className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14px] font-medium text-gray-600 hover:bg-gray-50 transition">
-                        🛠 Dashboard
-                    </Link>
-                    <Link to="/leaderboard" className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14px] font-medium text-gray-600 hover:bg-gray-50 transition">
-                        🏆 Leaderboard
-                    </Link>
-                    {/* Add more links as per your sidebar design */}
-                </nav>
-            </aside>
-
-            {/* ═══ MAIN CONTENT ═══ */}
-            <main className="flex-1 flex flex-col items-center justify-center p-8">
-                <div className="max-w-md w-full text-center">
-                    
-                    {/* Animated Illustration Placeholder */}
-                    <div className="relative mb-8 flex justify-center">
-                        <div className="w-64 h-64 bg-purple-100 rounded-full animate-pulse absolute -z-10 opacity-50 blur-2xl"></div>
-                        <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-50 relative">
-                            <span className="text-7xl">🚀</span>
-                            <div className="absolute -top-2 -right-2 bg-gradient-to-tr from-purple-600 to-blue-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase">
-                                Coming Soon
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Text Content */}
-                    <h1 className="text-3xl font-black text-gray-900 mb-3 leading-tight">
-                        {featureName} is almost here!
-                    </h1>
-                    <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-                        We're currently polishing the mentorship program and exclusive features to give you the best experience possible. 
-                        Check back in a few days!
-                    </p>
-
-                    {/* Progress Bar UI Mockup */}
-                    <div className="bg-white border border-gray-100 p-4 rounded-2xl mb-8 flex items-center gap-4">
-                        <div className="flex-1 bg-gray-100 h-2.5 rounded-full overflow-hidden">
-                            <div className="bg-gradient-to-r from-purple-600 to-blue-500 h-full w-[75%] rounded-full transition-all duration-1000"></div>
-                        </div>
-                        <span className="text-xs font-bold text-purple-600">75% Done</span>
-                    </div>
-
-                    {/* Back Button */}
-                    <button 
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6 font-sans">
+            <div className="max-w-md w-full text-center bg-white rounded-3xl border border-gray-100 shadow-sm p-10">
+                <div className="text-5xl mb-4">🧭</div>
+                <p className="text-xs font-bold uppercase tracking-widest text-purple-600 mb-2">404</p>
+                <h1 className="text-2xl font-extrabold text-gray-900 mb-2">Page not found</h1>
+                <p className="text-sm text-gray-500 mb-8">
+                    The page you are looking for does not exist or has been moved.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button
                         onClick={() => navigate(-1)}
-                        className="inline-flex items-center gap-2 px-8 py-3 bg-gray-900 text-white rounded-2xl font-bold text-sm hover:shadow-lg hover:shadow-gray-200 transition-all active:scale-95"
+                        className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
                     >
-                        ← Go Back to Dashboard
+                        ← Go Back
                     </button>
-                    
-                    <div className="mt-12 flex justify-center gap-4 opacity-30 grayscale">
-                        {/* Fake "People working" avatars */}
-                        <div className="w-8 h-8 rounded-full bg-gray-300"></div>
-                        <div className="w-8 h-8 rounded-full bg-gray-400"></div>
-                        <div className="w-8 h-8 rounded-full bg-gray-200"></div>
-                    </div>
+                    <Link
+                        to={user ? dashboardPath : '/'}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-blue-500 text-white text-sm font-semibold hover:opacity-90 transition shadow-sm"
+                    >
+                        {user ? 'Go to Dashboard' : 'Go Home'}
+                    </Link>
                 </div>
-            </main>
+            </div>
         </div>
     );
 };
 
-export default WorkInProgress;
+export default Notfound;
