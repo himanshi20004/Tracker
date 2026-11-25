@@ -1,41 +1,56 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import { useState } from 'react';
 import { toast } from 'react-toastify';
+import api from '../utils/api';
 
-const Form = ({ receiverId, setChats, chats }) => {
+const Form = ({ receiverId, setChats, socket }) => {
   const [message, setMessage] = useState('');
-  const userId = window.localStorage.getItem("userId");
+  const [sending, setSending] = useState(false);
 
   const sendMessage = async (e) => {
     e.preventDefault();
+    const trimmed = message.trim();
+    if (!trimmed || !receiverId || sending) return;
+
+    setSending(true);
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('You must be logged in');
-        return;
+      const response = await api.post(`/send/${receiverId}`, { content: trimmed });
+      const savedMessage = response.data;
+
+      if (socket && savedMessage?.socketReceipt) {
+        socket.emit('sendMessage', { socketReceipt: savedMessage.socketReceipt });
       }
 
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/v1/send/` + receiverId, { content: message }, {
-        headers: { Authorization: `Bearer ${token}` },
+      setChats((prev) => {
+        if (savedMessage._id && prev.some((m) => m._id === savedMessage._id)) {
+          return prev;
+        }
+        return [...prev, savedMessage];
       });
-
-      setChats([...chats, { content: message, sender: userId }]);
       setMessage('');
     } catch (error) {
-      toast.error('Error sending message');
+      toast.error(error.response?.data?.message || 'Error sending message');
+    } finally {
+      setSending(false);
     }
   };
 
   return (
-    <form onSubmit={sendMessage} className="flex items-center p-2 ">
+    <form onSubmit={sendMessage} className="flex items-center gap-2">
       <input
         type="text"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        placeholder="Type your message"
-        className="flex-1 p-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-600"
+        placeholder="Type your message..."
+        maxLength={2000}
+        className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
       />
-      <button type="submit" className="bg-purple-600 text-white p-2 rounded font-serif m-2">Send</button>
+      <button
+        type="submit"
+        disabled={!message.trim() || sending}
+        className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-blue-500 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition disabled:opacity-50"
+      >
+        {sending ? 'Sending...' : 'Send'}
+      </button>
     </form>
   );
 };

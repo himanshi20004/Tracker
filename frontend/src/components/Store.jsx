@@ -1,4 +1,3 @@
-import React from "react";
 import coin from '../assets/coin.png';
 import cap from '../assets/cap.png';
 import studyKit from '../assets/studyKit.png'; // Update with actual filename

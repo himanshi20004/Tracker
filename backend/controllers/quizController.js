@@ -1,117 +1,206 @@
 const Quiz = require('../models/quizmodel');
 const Score = require('../models/score');
 const User = require('../models/usermodels');
+const catchAsyncErrors = require('../middleware/catchAsyncErrors');
+const ErrorHandler = require('../utils/errorhander');
+const { isValidObjectId, sanitizeText } = require('../utils/validation');
 
 // Create Quiz (Admin only)
-exports.createQuiz = async (req, res) => {
-    try {
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Access denied. Admins only.' });
+exports.createQuiz = catchAsyncErrors(async (req, res, next) => {
+    const { title, questions, timer, deadline } = req.body;
+
+    const cleanTitle = sanitizeText(title, 200);
+    const parsedTimer = Number(timer);
+    const deadlineDate = new Date(deadline);
+
+    if (!cleanTitle || !Array.isArray(questions) || questions.length === 0) {
+        return next(new ErrorHandler('Title and at least one question are required.', 400));
+    }
+    if (!Number.isFinite(parsedTimer) || parsedTimer < 10) {
+        return next(new ErrorHandler('Timer must be at least 10 seconds.', 400));
+    }
+    if (Number.isNaN(deadlineDate.getTime())) {
+        return next(new ErrorHandler('Valid deadline is required.', 400));
+    }
+
+    const normalizedQuestions = [];
+    for (let i = 0; i < questions.length; i += 1) {
+        const q = questions[i];
+        const questionText = sanitizeText(q?.questionText, 1000);
+        const options = Array.isArray(q?.options)
+            ? q.options.map((o) => sanitizeText(o, 500)).filter(Boolean)
+            : [];
+        const correctAnswer = Number(q?.correctAnswer);
+        const points = Number(q?.points);
+
+        if (!questionText || options.length < 2) {
+            return next(new ErrorHandler(`Question ${i + 1} must have text and at least 2 non-empty options.`, 400));
+        }
+        if (!Number.isInteger(correctAnswer) || correctAnswer < 0 || correctAnswer >= options.length) {
+            return next(new ErrorHandler(`Question ${i + 1} has an invalid correctAnswer index.`, 400));
+        }
+        if (!Number.isFinite(points) || points < 0 || points > 1000) {
+            return next(new ErrorHandler(`Question ${i + 1} must have valid non-negative points.`, 400));
         }
 
-        const { title, questions, timer, deadline } = req.body;
-
-        if (!title || !questions || !timer || !deadline) {
-            return res.status(400).json({ message: 'Title, questions, timer, and deadline are required.' });
-        }
-
-        const questionsWithIds = questions.map((question, index) => ({
-            id: question.id || index,
-            ...question
-        }));
-
-        const totalPoints = questionsWithIds.reduce((sum, q) => sum + q.points, 0);
-
-        const newQuiz = new Quiz({
-            title,
-            questions: questionsWithIds,
-            timer,
-            totalPoints,
-            deadline,
-            createdBy: req.user._id,
+        normalizedQuestions.push({
+            questionText,
+            options,
+            correctAnswer,
+            points,
         });
-
-        await newQuiz.save();
-        res.status(201).json({ message: 'Quiz created successfully!', quiz: newQuiz });
-    } catch (error) {
-        res.status(500).json({ message: 'Failed to create quiz.', error });
     }
-};
 
-// Get All Quizzes (User only)
-exports.getAllQuizzes = async (req, res) => {
-    try {
-        if (req.user.role !== 'user') {
-            return res.status(403).json({ message: 'Access denied. Users only.' });
-        }
-        const quizzes = await Quiz.find();
-        res.status(200).json({ quizzes });
-    } catch (error) {
-        res.status(500).json({ message: 'Failed to fetch quizzes.', error });
+    const totalPoints = normalizedQuestions.reduce((sum, q) => sum + q.points, 0);
+
+    const newQuiz = await Quiz.create({
+        title: cleanTitle,
+        questions: normalizedQuestions,
+        timer: parsedTimer,
+        totalPoints,
+        deadline: deadlineDate,
+        createdBy: req.user._id,
+    });
+
+    res.status(201).json({
+        success: true,
+        message: 'Quiz created successfully!',
+        quiz: newQuiz,
+    });
+});
+
+// Get All Quizzes (students never receive correctAnswer)
+exports.getAllQuizzes = catchAsyncErrors(async (req, res, next) => {
+    const query = Quiz.find().sort({ createdAt: -1 });
+    if (req.user.role !== 'admin') {
+        query.select('-questions.correctAnswer');
     }
-};
+    const quizzes = await query;
 
-// Get Single Quiz by ID (User only) - THIS WAS LIKELY MISSING
-exports.getQuiz = async (req, res) => {
-    try {
-        if (req.user.role !== 'user') {
-            return res.status(403).json({ message: 'Access denied. Users only.' });
-        }
-        const { quizId } = req.params;
-        const quiz = await Quiz.findById(quizId);
+    res.status(200).json({
+        success: true,
+        quizzes,
+    });
+});
 
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found.' });
-
-        res.status(200).json({ quiz });
-    } catch (error) {
-        res.status(500).json({ message: 'Failed to fetch quiz.', error });
+// Get Single Quiz by ID (students never receive correctAnswer)
+exports.getQuiz = catchAsyncErrors(async (req, res, next) => {
+    const { quizId } = req.params;
+    if (!isValidObjectId(quizId)) {
+        return next(new ErrorHandler('Invalid quiz ID.', 400));
     }
-};
 
-// Submit Quiz with Deadline and "Once Only" checks
-exports.submitQuiz = async (req, res) => {
-    try {
-        if (req.user.role !== 'user') {
-            return res.status(403).json({ message: 'Access denied. Users only.' });
-        }
+    const query = Quiz.findById(quizId);
+    if (req.user.role !== 'admin') {
+        query.select('-questions.correctAnswer');
+    }
+    const quiz = await query;
 
-        const { quizId, answers } = req.body;
-        const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+        return next(new ErrorHandler('Quiz not found.', 404));
+    }
 
-        if (!quiz) return res.status(404).json({ message: 'Quiz not found.' });
+    res.status(200).json({
+        success: true,
+        quiz,
+    });
+});
 
-        // Check deadline
-        if (new Date() > new Date(quiz.deadline)) {
-            return res.status(400).json({ message: 'The deadline for this quiz has passed.' });
-        }
+// Submit Quiz (Atomic concurrency protection + server-side scoring + deduplicated answers)
+exports.submitQuiz = catchAsyncErrors(async (req, res, next) => {
+    if (req.user.role !== 'user') {
+        return next(new ErrorHandler('Access denied. Students only.', 403));
+    }
 
-        // Check if already attempted
-        if (quiz.attemptedUsers.includes(req.user._id)) {
-            return res.status(400).json({ message: 'You have already submitted this quiz.' });
-        }
+    const paramQuizId = req.params.quizId;
+    const bodyQuizId = req.body.quizId;
+    const quizId = paramQuizId || bodyQuizId;
 
-        let score = 0;
-        answers.forEach((userAnswer) => {
-            const question = quiz.questions.find((q) => q._id.toString() === userAnswer.questionId.toString());
-            if (question && userAnswer.answer === question.correctAnswer) {
-                score += question.points;
+    if (!isValidObjectId(quizId)) {
+        return next(new ErrorHandler('Invalid quiz ID.', 400));
+    }
+    if (paramQuizId && bodyQuizId && paramQuizId !== bodyQuizId) {
+        return next(new ErrorHandler('Mismatched quiz ID in request.', 400));
+    }
+
+    const { answers } = req.body;
+    if (!Array.isArray(answers)) {
+        return next(new ErrorHandler('Answers must be provided as an array.', 400));
+    }
+
+    // Deduplicate answers by questionId so a single question cannot be scored multiple times
+    const answerMap = new Map();
+    for (const item of answers) {
+        if (item && item.questionId && Number.isInteger(item.answer)) {
+            const qId = item.questionId.toString();
+            if (!answerMap.has(qId)) {
+                answerMap.set(qId, item.answer);
             }
+        }
+    }
+
+    // Atomically claim the attempt only if deadline hasn't passed and user hasn't attempted yet
+    const claimedQuiz = await Quiz.findOneAndUpdate(
+        {
+            _id: quizId,
+            deadline: { $gte: new Date() },
+            attemptedUsers: { $ne: req.user._id },
+        },
+        {
+            $addToSet: { attemptedUsers: req.user._id },
+        },
+        { new: true }
+    );
+
+    if (!claimedQuiz) {
+        const existingQuiz = await Quiz.findById(quizId).select('deadline attemptedUsers');
+        if (!existingQuiz) {
+            return next(new ErrorHandler('Quiz not found.', 404));
+        }
+        if (existingQuiz.attemptedUsers.some((id) => id.toString() === req.user._id.toString())) {
+            return next(new ErrorHandler('You have already submitted this quiz.', 400));
+        }
+        if (new Date() > new Date(existingQuiz.deadline)) {
+            return next(new ErrorHandler('The deadline for this quiz has passed.', 400));
+        }
+        return next(new ErrorHandler('Unable to submit quiz.', 400));
+    }
+
+    let score = 0;
+    for (const question of claimedQuiz.questions) {
+        const submittedAnswer = answerMap.get(question._id.toString());
+        if (submittedAnswer !== undefined && submittedAnswer === question.correctAnswer) {
+            score += question.points;
+        }
+    }
+
+    try {
+        await Score.create({
+            user: req.user._id,
+            quiz: claimedQuiz._id,
+            score,
         });
 
-        // Save result
-        const newScore = new Score({ user: req.user._id, quiz: quiz._id, score });
-        await newScore.save();
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user._id,
+            { $inc: { points: score } },
+            { new: true }
+        );
 
-        // Mark as attempted and update points
-        quiz.attemptedUsers.push(req.user._id);
-        await quiz.save();
-
-        const user = await User.findById(req.user._id);
-        user.points += score;
-        await user.save();
-
-        res.status(200).json({ message: 'Quiz submitted successfully!', score });
+        res.status(200).json({
+            success: true,
+            message: 'Quiz submitted successfully!',
+            score,
+            totalPoints: claimedQuiz.totalPoints,
+            totalUserPoints: updatedUser ? updatedUser.points : undefined,
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Failed to submit quiz.', error });
+        // Compensating rollback if score persistence or points update failed
+        await Quiz.updateOne(
+            { _id: claimedQuiz._id },
+            { $pull: { attemptedUsers: req.user._id } }
+        );
+        await Score.deleteOne({ user: req.user._id, quiz: claimedQuiz._id });
+        throw error;
     }
-};
+});

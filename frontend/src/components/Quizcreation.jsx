@@ -1,60 +1,69 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { useNavigate, Link } from 'react-router-dom';
+import api, { clearAuthStorage } from '../utils/api';
+import { disconnectSocket } from '../utils/socket';
 
 const CreateQuizForm = () => {
   const [title, setTitle] = useState('');
   const [timer, setTimer] = useState('');
   const [deadline, setDeadline] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [questions, setQuestions] = useState([
-    { questionText: '', options: ['', '', '', ''], correctAnswer: 0, points: 0 }
+    { questionText: '', options: ['', '', '', ''], correctAnswer: 0, points: 10 },
   ]);
 
   const navigate = useNavigate();
 
   const addQuestion = () => {
-    setQuestions([...questions, { questionText: '', options: ['', '', '', ''], correctAnswer: 0, points: 0 }]);
+    setQuestions((prev) => [
+      ...prev,
+      { questionText: '', options: ['', '', '', ''], correctAnswer: 0, points: 10 },
+    ]);
   };
 
   const removeQuestion = (index) => {
     if (questions.length === 1) return;
-    setQuestions(questions.filter((_, i) => i !== index));
+    setQuestions((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateQuestion = (index, field, value) => {
-    const updated = [...questions];
-    updated[index][field] = value;
-    setQuestions(updated);
+    setQuestions((prev) =>
+      prev.map((q, i) => (i === index ? { ...q, [field]: value } : q))
+    );
   };
 
   const updateOption = (qIndex, optIndex, value) => {
-    const updated = [...questions];
-    updated[qIndex].options[optIndex] = value;
-    setQuestions(updated);
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === qIndex
+          ? { ...q, options: q.options.map((o, oi) => (oi === optIndex ? value : o)) }
+          : q
+      )
+    );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const isInvalid = questions.some(q =>
-      !q.questionText || q.options.some(opt => opt.trim() === '')
+    const isInvalid = questions.some(
+      (q) => !q.questionText.trim() || q.options.some((opt) => opt.trim() === '')
     );
-    if (!title || !timer || !deadline || isInvalid) {
+    if (!title.trim() || !timer || !deadline || isInvalid) {
       toast.error('Please fill in all fields including all options.');
       return;
     }
 
     setSubmitting(true);
-    const token = localStorage.getItem('token');
     try {
-      await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/v1/postquizzes`,
-        { title, questions, timer: parseInt(timer, 10), deadline },
-        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-      );
+      await api.post('/postquizzes', {
+        title: title.trim(),
+        questions,
+        timer: parseInt(timer, 10),
+        deadline,
+      });
       toast.success('Quiz created successfully!');
-      setTimeout(() => navigate('/adminDashboard'), 1500);
+      setTimeout(() => navigate('/adminDashboard'), 1200);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create quiz.');
     } finally {
@@ -62,76 +71,110 @@ const CreateQuizForm = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try { await api.get('/logout'); } catch { /* noop */ }
+    disconnectSocket();
+    clearAuthStorage();
+    navigate('/login');
+  };
+
   const optionLabels = ['A', 'B', 'C', 'D'];
+  const navLinks = [
+    { label: '🛠 Dashboard',        path: '/adminDashboard' },
+    { label: '🧠 Create Quiz',      path: '/admin/create-quiz' },
+    { label: '🏆 Leaderboard',      path: '/leaderboard' },
+    { label: '📅 Timetable',        path: '/timetable' },
+    { label: '💬 Chat',             path: '/chat' },
+    { label: '❓ AI Doubts',        path: '/doubt' },
+    { label: '📚 Manage Resources', path: '/upload' },
+  ];
 
-  return (
-    <div className="min-h-screen flex bg-gray-50 font-sans">
-
-      {/* Sidebar */}
-      <aside className="w-64 shrink-0 flex flex-col bg-white border-r border-gray-100 shadow-sm min-h-screen">
-        <div className="flex items-center gap-2.5 px-6 py-5 border-b border-gray-100">
+  const SidebarContent = () => (
+    <>
+      <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+        <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center shadow">
             <div className="w-2 h-2 bg-white rounded-full" />
           </div>
           <span className="text-lg font-bold text-gray-900">StudyWave Admin</span>
         </div>
-        <nav className="flex-1 px-3 space-y-1 mt-4">
-          {[
-            { label: 'Dashboard',        icon: 'grid',     path: '/adminDashboard' },
-            { label: 'Create Quiz',      icon: 'brain',    path: '/admin/create-quiz' },
-            { label: 'Leaderboard',      icon: 'trophy',   path: '/leaderboard' },
-            { label: 'Timetable',        icon: 'calendar', path: '/timetable' },
-            { label: 'Chat',             icon: 'chat',     path: '/chat' },
-            { label: 'Doubts',           icon: 'question', path: '/doubts' },
-            { label: 'Manage Resources', icon: 'book',     path: '/upload' },
-          ].map(({ label, path }) => (
-            <Link
-              key={path}
-              to={path}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition ${
-                path === '/admin/create-quiz'
-                  ? 'bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-        <div className="px-4 pb-6 mt-auto">
-          <button
-            onClick={() => { localStorage.clear(); navigate('/login'); }}
-            className="w-full px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition"
+        <button
+          onClick={() => setMobileMenuOpen(false)}
+          className="md:hidden text-gray-500 hover:text-gray-800 text-lg"
+          aria-label="Close menu"
+        >
+          ✕
+        </button>
+      </div>
+      <nav className="flex-1 px-3 space-y-1 mt-4">
+        {navLinks.map(({ label, path }) => (
+          <Link
+            key={path}
+            to={path}
+            onClick={() => setMobileMenuOpen(false)}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition ${
+              path === '/admin/create-quiz'
+                ? 'bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
           >
-            Logout
-          </button>
-        </div>
+            {label}
+          </Link>
+        ))}
+      </nav>
+      <div className="px-4 pb-6 mt-auto">
+        <button
+          onClick={handleLogout}
+          className="w-full px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition"
+        >
+          🚪 Logout
+        </button>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen flex bg-gray-50 font-sans">
+      <aside className="hidden md:flex w-64 shrink-0 flex-col bg-white border-r border-gray-100 shadow-sm min-h-screen">
+        <SidebarContent />
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 overflow-y-auto">
-        <header className="sticky top-0 z-10 flex items-center justify-between px-8 py-4 bg-white border-b border-gray-100 shadow-sm">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Create Quiz</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Build a new quiz for your students</p>
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-40 flex md:hidden">
+          <div className="fixed inset-0 bg-black/40" onClick={() => setMobileMenuOpen(false)} />
+          <aside className="relative z-50 w-64 flex flex-col bg-white min-h-screen shadow-xl">
+            <SidebarContent />
+          </aside>
+        </div>
+      )}
+
+      <main className="flex-1 min-w-0 overflow-y-auto">
+        <header className="sticky top-0 z-10 flex items-center justify-between px-4 sm:px-8 py-4 bg-white border-b border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+              aria-label="Open menu"
+            >
+              ☰
+            </button>
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900">Create Quiz</h1>
+              <p className="text-xs text-gray-400 mt-0.5">Build a new quiz for your students</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            {questions.length} question{questions.length !== 1 ? 's' : ''} added
+          <div className="text-sm text-gray-500">
+            {questions.length} question{questions.length !== 1 ? 's' : ''}
           </div>
         </header>
 
-        <div className="px-8 py-7 max-w-3xl">
+        <div className="px-4 sm:px-8 py-7 max-w-3xl">
           <form onSubmit={handleSubmit} className="space-y-6">
-
-            {/* Quiz Info Card */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <h2 className="text-base font-bold text-gray-900 mb-4">Quiz Details</h2>
               <div className="space-y-4">
-
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Quiz Title
-                  </label>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Quiz Title</label>
                   <input
                     type="text"
                     value={title}
@@ -141,12 +184,9 @@ const CreateQuizForm = () => {
                     className="w-full mt-1 px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none transition"
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Timer (seconds)
-                    </label>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Timer (seconds)</label>
                     <input
                       type="number"
                       value={timer}
@@ -158,9 +198,7 @@ const CreateQuizForm = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Deadline
-                    </label>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Deadline</label>
                     <input
                       type="datetime-local"
                       value={deadline}
@@ -170,17 +208,11 @@ const CreateQuizForm = () => {
                     />
                   </div>
                 </div>
-
               </div>
             </div>
 
-            {/* Questions */}
             {questions.map((question, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"
-              >
-                {/* Question header */}
+              <div key={index} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
@@ -199,11 +231,8 @@ const CreateQuizForm = () => {
                   )}
                 </div>
 
-                {/* Question text */}
                 <div className="mb-4">
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Question Text
-                  </label>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Question Text</label>
                   <input
                     type="text"
                     placeholder="Type your question here..."
@@ -214,11 +243,8 @@ const CreateQuizForm = () => {
                   />
                 </div>
 
-                {/* Options */}
                 <div className="mb-4">
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
-                    Answer Options
-                  </label>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">Answer Options</label>
                   <div className="space-y-2">
                     {question.options.map((option, optIndex) => (
                       <div key={optIndex} className="flex items-center gap-3">
@@ -231,7 +257,7 @@ const CreateQuizForm = () => {
                         </div>
                         <input
                           type="text"
-                          placeholder={"Option " + optionLabels[optIndex]}
+                          placeholder={`Option ${optionLabels[optIndex]}`}
                           value={option}
                           onChange={(e) => updateOption(index, optIndex, e.target.value)}
                           required
@@ -242,15 +268,12 @@ const CreateQuizForm = () => {
                   </div>
                 </div>
 
-                {/* Correct answer + points */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Correct Answer (0-3)
-                    </label>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Correct Answer</label>
                     <select
                       value={question.correctAnswer}
-                      onChange={(e) => updateQuestion(index, 'correctAnswer', parseInt(e.target.value))}
+                      onChange={(e) => updateQuestion(index, 'correctAnswer', parseInt(e.target.value, 10))}
                       className="w-full mt-1 px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none transition"
                     >
                       <option value={0}>A - Option 1</option>
@@ -260,24 +283,23 @@ const CreateQuizForm = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      Points
-                    </label>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Points</label>
                     <input
                       type="number"
                       value={question.points}
-                      onChange={(e) => updateQuestion(index, 'points', parseInt(e.target.value))}
+                      onChange={(e) => {
+                        const parsed = parseInt(e.target.value, 10);
+                        updateQuestion(index, 'points', Number.isNaN(parsed) ? 0 : parsed);
+                      }}
                       required
                       min="0"
                       className="w-full mt-1 px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none transition"
                     />
                   </div>
                 </div>
-
               </div>
             ))}
 
-            {/* Add Question */}
             <button
               type="button"
               onClick={addQuestion}
@@ -286,15 +308,13 @@ const CreateQuizForm = () => {
               + Add Another Question
             </button>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white font-bold py-3 rounded-xl shadow-md hover:opacity-90 transition active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white font-bold py-3 rounded-xl shadow-md hover:opacity-90 transition active:scale-95 disabled:opacity-60"
             >
               {submitting ? 'Saving Quiz...' : 'Save Quiz'}
             </button>
-
           </form>
         </div>
       </main>
