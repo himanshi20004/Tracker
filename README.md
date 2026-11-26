@@ -6,6 +6,26 @@
 
 ---
 
+## 📸 Screenshots
+
+| Landing Page | Sign In Portal |
+| :---: | :---: |
+| ![Landing Page](assets/Screenshot%202026-06-30%20170915.png) | ![Sign In Portal](assets/Screenshot%202026-06-30%20170926.png) |
+
+| Student Dashboard & Tasks | Quizzes |
+| :---: | :---: |
+| ![Student Dashboard](assets/Screenshot%202026-06-30%20171008.png) | ![Quizzes](assets/Screenshot%202026-06-30%20171026.png) |
+
+| Personal Timetable | AI Mentor (Doubt Solver) |
+| :---: | :---: |
+| ![Timetable](assets/Screenshot%202026-06-30%20171049.png) | ![AI Mentor](assets/Screenshot%202026-06-30%20171101.png) |
+
+| Real-Time Peer Chat |
+| :---: |
+| ![Real-Time Chat](assets/Screenshot%202026-06-30%20171206.png) |
+
+---
+
 ## ✨ Key Features
 
 - **Role-Based Authentication & Security:** JWT + HTTP-only cookie authentication separating Student (`user`) and Administrator (`admin`) portals. Public registration is strictly restricted to student accounts; admin promotion is restricted to existing admins.
